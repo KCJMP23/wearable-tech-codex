@@ -1,0 +1,429 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts imports for Woodstock-inspired typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+/* CSS Custom Properties for Multi-Theme Support */
+:root {
+  /* Default Theme - Earth & Sunset */
+  --color-primary-50: 250 248 245;
+  --color-primary-100: 245 241 234;
+  --color-primary-200: 232 223 209;
+  --color-primary-300: 217 202 184;
+  --color-primary-400: 199 178 153;
+  --color-primary-500: 181 154 122;
+  --color-primary-600: 157 132 99;
+  --color-primary-700: 125 106 82;
+  --color-primary-800: 95 82 67;
+  --color-primary-900: 65 59 55;
+
+  --color-accent-50: 254 247 240;
+  --color-accent-100: 253 238 224;
+  --color-accent-200: 249 213 187;
+  --color-accent-300: 244 184 150;
+  --color-accent-400: 237 146 101;
+  --color-accent-500: 229 109 61;
+  --color-accent-600: 204 90 46;
+  --color-accent-700: 168 72 37;
+  --color-accent-800: 133 56 33;
+  --color-accent-900: 107 45 30;
+
+  /* Background and text colors */
+  --bg-primary: rgb(var(--color-primary-50));
+  --bg-secondary: rgb(var(--color-primary-100));
+  --bg-tertiary: rgb(var(--color-primary-200));
+  --text-primary: rgb(var(--color-primary-900));
+  --text-secondary: rgb(var(--color-primary-700));
+  --text-tertiary: rgb(var(--color-primary-500));
+
+  /* Border and divider colors */
+  --border-primary: rgb(var(--color-primary-200));
+  --border-secondary: rgb(var(--color-primary-300));
+  --border-accent: rgb(var(--color-accent-300));
+
+  /* Shadow variables */
+  --shadow-color: 0 0 0;
+  --shadow-opacity: 0.1;
+}
+
+/* Forest Theme */
+[data-theme="forest"] {
+  --color-primary-50: 244 247 244;
+  --color-primary-100: 232 240 232;
+  --color-primary-200: 199 220 199;
+  --color-primary-300: 165 200 165;
+  --color-primary-400: 123 166 123;
+  --color-primary-500: 82 132 82;
+  --color-primary-600: 69 109 69;
+  --color-primary-700: 56 87 56;
+  --color-primary-800: 44 67 44;
+  --color-primary-900: 35 52 35;
+
+  --color-accent-50: 254 247 240;
+  --color-accent-100: 253 238 224;
+  --color-accent-200: 249 213 187;
+  --color-accent-300: 244 184 150;
+  --color-accent-400: 237 146 101;
+  --color-accent-500: 229 109 61;
+  --color-accent-600: 204 90 46;
+  --color-accent-700: 168 72 37;
+  --color-accent-800: 133 56 33;
+  --color-accent-900: 107 45 30;
+}
+
+/* Bark Theme */
+[data-theme="bark"] {
+  --color-primary-50: 248 246 244;
+  --color-primary-100: 241 237 232;
+  --color-primary-200: 221 212 204;
+  --color-primary-300: 200 187 175;
+  --color-primary-400: 173 155 135;
+  --color-primary-500: 146 123 95;
+  --color-primary-600: 125 101 80;
+  --color-primary-700: 101 81 66;
+  --color-primary-800: 77 62 52;
+  --color-primary-900: 58 48 42;
+
+  --color-accent-50: 254 247 240;
+  --color-accent-100: 253 238 224;
+  --color-accent-200: 249 213 187;
+  --color-accent-300: 244 184 150;
+  --color-accent-400: 237 146 101;
+  --color-accent-500: 229 109 61;
+  --color-accent-600: 204 90 46;
+  --color-accent-700: 168 72 37;
+  --color-accent-800: 133 56 33;
+  --color-accent-900: 107 45 30;
+}
+
+/* Cream Theme */
+[data-theme="cream"] {
+  --color-primary-50: 254 254 254;
+  --color-primary-100: 253 252 251;
+  --color-primary-200: 249 247 244;
+  --color-primary-300: 245 242 237;
+  --color-primary-400: 238 233 225;
+  --color-primary-500: 231 224 213;
+  --color-primary-600: 210 199 187;
+  --color-primary-700: 181 168 152;
+  --color-primary-800: 149 134 117;
+  --color-primary-900: 119 106 93;
+
+  --color-accent-50: 254 247 240;
+  --color-accent-100: 253 238 224;
+  --color-accent-200: 249 213 187;
+  --color-accent-300: 244 184 150;
+  --color-accent-400: 237 146 101;
+  --color-accent-500: 229 109 61;
+  --color-accent-600: 204 90 46;
+  --color-accent-700: 168 72 37;
+  --color-accent-800: 133 56 33;
+  --color-accent-900: 107 45 30;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary-50: 65 59 55;
+    --color-primary-100: 95 82 67;
+    --color-primary-200: 125 106 82;
+    --color-primary-300: 157 132 99;
+    --color-primary-400: 181 154 122;
+    --color-primary-500: 199 178 153;
+    --color-primary-600: 217 202 184;
+    --color-primary-700: 232 223 209;
+    --color-primary-800: 245 241 234;
+    --color-primary-900: 250 248 245;
+
+    --bg-primary: rgb(24 24 27);
+    --bg-secondary: rgb(39 39 42);
+    --bg-tertiary: rgb(63 63 70);
+    --text-primary: rgb(250 250 250);
+    --text-secondary: rgb(212 212 216);
+    --text-tertiary: rgb(161 161 170);
+
+    --border-primary: rgb(63 63 70);
+    --border-secondary: rgb(82 82 91);
+    --border-accent: rgb(244 184 150);
+
+    --shadow-color: 0 0 0;
+    --shadow-opacity: 0.3;
+  }
+}
+
+/* Base styles */
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-earth-50 text-earth-900 font-sans;
+    @apply transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-earth-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-earth-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-earth-400;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-sunset-500;
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-sunset-200 text-sunset-900;
+  }
+
+  /* Disabled styles */
+  :disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  /* Link styles */
+  a {
+    @apply text-sunset-600 hover:text-sunset-700 transition-colors;
+  }
+
+  /* Form elements */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    @apply bg-white border border-earth-300 rounded-2xl px-4 py-2.5;
+    @apply focus:border-sunset-500 focus:ring-2 focus:ring-sunset-200;
+    @apply transition-all duration-200;
+  }
+
+  /* Button reset */
+  button {
+    @apply font-sans;
+  }
+}
+
+/* Component layer for reusable patterns */
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.125);
+  }
+
+  .glass-dark {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.125);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-sunset-600 to-sunset-400 bg-clip-text text-transparent;
+  }
+
+  /* Floating animation */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Soft shadows */
+  .shadow-soft {
+    box-shadow: 
+      0 2px 15px -3px rgba(var(--shadow-color), var(--shadow-opacity)), 
+      0 10px 20px -2px rgba(var(--shadow-color), calc(var(--shadow-opacity) * 0.4));
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 
+      0 10px 15px -3px rgba(var(--shadow-color), calc(var(--shadow-opacity) * 0.8)), 
+      0 20px 25px -5px rgba(var(--shadow-color), calc(var(--shadow-opacity) * 0.5));
+  }
+
+  .shadow-soft-xl {
+    box-shadow: 
+      0 20px 25px -5px rgba(var(--shadow-color), calc(var(--shadow-opacity) * 0.8)), 
+      0 25px 50px -12px rgba(var(--shadow-color), calc(var(--shadow-opacity) * 0.6));
+  }
+
+  /* Hover effects */
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-soft-lg;
+  }
+
+  /* Content containers */
+  .container-fluid {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-narrow {
+    @apply w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Typography utilities */
+  .heading-display {
+    @apply font-display text-4xl sm:text-5xl lg:text-6xl font-bold;
+    @apply text-earth-900 leading-tight tracking-tight;
+  }
+
+  .heading-1 {
+    @apply font-display text-3xl sm:text-4xl lg:text-5xl font-bold;
+    @apply text-earth-900 leading-tight;
+  }
+
+  .heading-2 {
+    @apply font-display text-2xl sm:text-3xl lg:text-4xl font-semibold;
+    @apply text-earth-900 leading-tight;
+  }
+
+  .heading-3 {
+    @apply font-display text-xl sm:text-2xl lg:text-3xl font-semibold;
+    @apply text-earth-900 leading-snug;
+  }
+
+  .body-large {
+    @apply text-lg sm:text-xl text-earth-700 leading-relaxed;
+  }
+
+  .body-medium {
+    @apply text-base sm:text-lg text-earth-700 leading-relaxed;
+  }
+
+  .body-small {
+    @apply text-sm sm:text-base text-earth-600 leading-relaxed;
+  }
+
+  .caption {
+    @apply text-xs sm:text-sm text-earth-500 leading-normal;
+  }
+}
+
+/* Utility layer for additional custom utilities */
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Spacing utilities */
+  .space-y-fluid > * + * {
+    @apply mt-4 sm:mt-6 lg:mt-8;
+  }
+
+  .space-y-section > * + * {
+    @apply mt-12 sm:mt-16 lg:mt-20;
+  }
+
+  /* Animation utilities */
+  .animate-in {
+    @apply animate-fade-in;
+  }
+
+  .animate-up {
+    @apply animate-slide-up;
+  }
+
+  .animate-scale {
+    @apply animate-scale-in;
+  }
+
+  /* Grid utilities */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  .grid-auto-fill {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  /* Border utilities */
+  .border-gradient {
+    border-image: linear-gradient(90deg, 
+      rgb(var(--color-accent-400)), 
+      rgb(var(--color-accent-600))
+    ) 1;
+  }
+
+  /* Background utilities */
+  .bg-gradient-warm {
+    @apply bg-gradient-to-br from-sunset-400 via-sunset-500 to-sunset-600;
+  }
+
+  .bg-gradient-earth {
+    @apply bg-gradient-to-br from-primary-300 via-primary-400 to-primary-500;
+  }
+
+  .bg-gradient-subtle {
+    @apply bg-gradient-to-b from-primary-50 to-primary-100;
+  }
+
+  /* Interactive states */
+  .interactive {
+    @apply transition-all duration-200;
+    @apply hover:scale-105 active:scale-95;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-500;
+  }
+
+  .interactive-soft {
+    @apply transition-all duration-300;
+    @apply hover:-translate-y-0.5 hover:shadow-soft;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-500;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    @apply hidden;
+  }
+
+  * {
+    @apply text-black bg-white;
+  }
+
+  a {
+    @apply text-black no-underline;
+  }
+
+  .shadow-soft,
+  .shadow-soft-lg,
+  .shadow-soft-xl {
+    @apply shadow-none;
+  }
+}

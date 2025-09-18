@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  @apply bg-[#f8f6f2] text-neutral-900;
+}
+
+a {
+  @apply text-amber-700 underline-offset-4 transition hover:text-amber-600;
+}
+
+.prose a {
+  @apply text-amber-700 no-underline;
+}
+
+.prose h2 {
+  @apply mt-8 text-2xl font-semibold;
+}
+
+.prose h3 {
+  @apply mt-6 text-xl font-semibold;
+}
+
+.prose ul {
+  @apply list-disc pl-6;
+}
+
+.prose ol {
+  @apply list-decimal pl-6;
+}
+
+.prose img {
+  @apply rounded-2xl shadow-md;
+}
