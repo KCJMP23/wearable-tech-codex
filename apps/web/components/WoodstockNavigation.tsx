@@ -314,13 +314,15 @@ export function WoodstockNavigation({ tenantSlug, tenantName }: NavigationProps)
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-900 hover:text-gray-600 p-2"
+              className="text-gray-900 hover:text-gray-600 p-2 transition-colors"
               aria-label="Toggle mobile menu"
+              aria-expanded={mobileMenuOpen}
+              data-testid="mobile-menu"
             >
               {mobileMenuOpen ? (
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
               ) : (
-                <Bars3Icon className="h-6 w-6" />
+                <Bars3Icon className="h-6 w-6" aria-hidden="true" />
               )}
             </button>
           </div>

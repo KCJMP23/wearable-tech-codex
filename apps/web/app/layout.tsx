@@ -3,20 +3,23 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { ThemeProvider } from '../components/ThemeProvider';
 import { ChatbotDock } from './components/ChatbotDock';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const metadata: Metadata = {
-  title: 'Affiliate Factory Orchestrator',
-  description: 'Multi-tenant wearable tech affiliate sites orchestrated by agents.'
+  title: 'Wearable Tech Codex',
+  description: 'Your trusted source for wearable technology reviews and comparisons.'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="antialiased">
-        <ThemeProvider>
-          {children}
-          <ChatbotDock />
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            {children}
+            <ChatbotDock />
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
