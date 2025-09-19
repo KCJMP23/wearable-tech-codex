@@ -32,20 +32,20 @@ async function main() {
   console.log("🏢 Test Tenant:", tenant1.address);
 
   // Connect to deployed contracts
-  const rewardsToken = await ethers.getContractAt("WearableRewardsToken", deployment.contracts.rewardsToken);
+  const rewardsToken = await ethers.getContractAt("AffiliateRewardsToken", deployment.contracts.rewardsToken);
   const affiliateAttribution = await ethers.getContractAt("AffiliateAttribution", deployment.contracts.affiliateAttribution);
 
   console.log("\n📦 Connected to contracts:");
-  console.log("WRT Token:", await rewardsToken.getAddress());
+  console.log("ART Token:", await rewardsToken.getAddress());
   console.log("Attribution:", await affiliateAttribution.getAddress());
 
   // Setup test data
   console.log("\n⚙️  Setting up test configuration...");
 
   // 1. Configure test tenant
-  const tenantId = "test-wearables-inc";
+  const tenantId = "test-affiliate-inc";
   const defaultCommissionRate = 750; // 7.5%
-  const minPayoutAmount = ethers.parseEther("5"); // 5 WRT minimum
+  const minPayoutAmount = ethers.parseEther("5"); // 5 ART minimum
 
   console.log("🏢 Configuring test tenant...");
   const configureTx = await affiliateAttribution.configureTenant(
@@ -67,7 +67,7 @@ async function main() {
     JSON.stringify({
       name: "Test Affiliate 1",
       website: "https://test-affiliate-1.com",
-      category: "wearables",
+      category: "affiliate",
     })
   );
   await registerAff1Tx.wait();
@@ -87,7 +87,7 @@ async function main() {
 
   // 3. Mint some test tokens for distribution
   console.log("\n💰 Minting test tokens...");
-  const testTokenAmount = ethers.parseEther("10000"); // 10,000 WRT for testing
+  const testTokenAmount = ethers.parseEther("10000"); // 10,000 ART for testing
 
   const mintTx = await rewardsToken.mint(
     tenant1.address,
@@ -95,7 +95,7 @@ async function main() {
     "Test token allocation for affiliate payouts"
   );
   await mintTx.wait();
-  console.log(`✅ Minted ${ethers.formatEther(testTokenAmount)} WRT to tenant wallet`);
+  console.log(`✅ Minted ${ethers.formatEther(testTokenAmount)} ART to tenant wallet`);
 
   // 4. Approve affiliate attribution contract to spend tokens
   console.log("\n🔓 Setting up token approvals...");
@@ -112,11 +112,11 @@ async function main() {
 
   // Sample product IDs
   const products = [
-    "apple-watch-series-9",
-    "garmin-forerunner-955",
-    "fitbit-versa-4",
-    "samsung-galaxy-watch-6",
-    "polar-grit-x2",
+    "premium-product-1",
+    "bestseller-item-2",
+    "trending-product-3",
+    "featured-item-4",
+    "popular-product-5",
   ];
 
   // Generate some clicks and conversions
@@ -181,7 +181,7 @@ async function main() {
   console.log("\n🥩 Setting up staking examples...");
   
   // Give affiliates some tokens to stake
-  const stakeAmount = ethers.parseEther("1000"); // 1000 WRT each
+  const stakeAmount = ethers.parseEther("1000"); // 1000 ART each
   
   for (const affiliate of [affiliate1, affiliate2]) {
     const mintStakeTx = await rewardsToken.mint(
@@ -196,7 +196,7 @@ async function main() {
     const stakeTx = await rewardsTokenAsAffiliate.stake(ethers.parseEther("500"));
     await stakeTx.wait();
     
-    console.log(`✅ ${affiliate.address} staked 500 WRT`);
+    console.log(`✅ ${affiliate.address} staked 500 ART`);
   }
 
   // 7. Display test environment summary
@@ -211,7 +211,7 @@ async function main() {
     
     console.log(`\n👤 Affiliate ${index + 1} (${affiliate.address}):`);
     console.log(`   📧 Email: affiliate${index + 1}@test.com`);
-    console.log(`   💰 WRT Balance: ${ethers.formatEther(balance)}`);
+    console.log(`   💰 ART Balance: ${ethers.formatEther(balance)}`);
     console.log(`   🥩 Staked: ${ethers.formatEther(stakedBalance)}`);
     console.log(`   📊 Total Earned: ${ethers.formatEther(stats[0])}`);
     console.log(`   👆 Total Clicks: ${stats[1].toString()}`);
@@ -223,13 +223,13 @@ async function main() {
   const tenantBalance = await rewardsToken.balanceOf(tenant1.address);
   console.log(`\n🏢 Tenant (${tenant1.address}):`);
   console.log(`   🆔 Tenant ID: ${tenantId}`);
-  console.log(`   💰 WRT Balance: ${ethers.formatEther(tenantBalance)}`);
+  console.log(`   💰 ART Balance: ${ethers.formatEther(tenantBalance)}`);
   console.log(`   📊 Commission Rate: ${defaultCommissionRate / 100}%`);
-  console.log(`   💸 Min Payout: ${ethers.formatEther(minPayoutAmount)} WRT`);
+  console.log(`   💸 Min Payout: ${ethers.formatEther(minPayoutAmount)} ART`);
 
   // Contract info
   console.log(`\n📦 Contract Addresses:`);
-  console.log(`   🪙 WearableRewardsToken: ${await rewardsToken.getAddress()}`);
+  console.log(`   🪙 AffiliateRewardsToken: ${await rewardsToken.getAddress()}`);
   console.log(`   🔗 AffiliateAttribution: ${await affiliateAttribution.getAddress()}`);
 
   console.log("\n🧪 Test Commands:");

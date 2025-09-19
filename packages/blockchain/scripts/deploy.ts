@@ -78,21 +78,21 @@ async function main() {
   const feeData = await ethers.provider.getFeeData();
   console.log("⛽ Gas Price:", ethers.formatUnits(feeData.gasPrice || 0, "gwei"), "gwei");
 
-  // Deploy Wearable Rewards Token
-  console.log("\n📦 Deploying WearableRewardsToken...");
-  const WearableRewardsTokenFactory = await ethers.getContractFactory("WearableRewardsToken");
+  // Deploy Affiliate Rewards Token
+  console.log("\n📦 Deploying AffiliateRewardsToken...");
+  const AffiliateRewardsTokenFactory = await ethers.getContractFactory("AffiliateRewardsToken");
   
-  const gasEstimateToken = await WearableRewardsTokenFactory.getDeployTransaction().estimateGas();
+  const gasEstimateToken = await AffiliateRewardsTokenFactory.getDeployTransaction().estimateGas();
   const adjustedGasLimitToken = gasEstimateToken * BigInt(Math.ceil(networkConfig.gasMultiplier * 100)) / BigInt(100);
 
-  const rewardsToken = await WearableRewardsTokenFactory.deploy({
+  const rewardsToken = await AffiliateRewardsTokenFactory.deploy({
     gasLimit: adjustedGasLimitToken,
   });
 
   await rewardsToken.waitForDeployment();
   const rewardsTokenAddress = await rewardsToken.getAddress();
   
-  console.log("✅ WearableRewardsToken deployed to:", rewardsTokenAddress);
+  console.log("✅ AffiliateRewardsToken deployed to:", rewardsTokenAddress);
   console.log("🧾 Transaction hash:", rewardsToken.deploymentTransaction()?.hash);
 
   // Wait for confirmations if not localhost
@@ -206,7 +206,7 @@ async function main() {
   console.log("\n🎉 Deployment completed successfully!");
   console.log("\n📋 Summary:");
   console.log("Network:", networkConfig.name);
-  console.log("WearableRewardsToken:", rewardsTokenAddress);
+  console.log("AffiliateRewardsToken:", rewardsTokenAddress);
   console.log("AffiliateAttribution:", affiliateAttributionAddress);
   console.log("Deployer:", deployer.address);
   
@@ -215,7 +215,7 @@ async function main() {
     console.log("- Test tenant configured with ID: test-tenant");
     console.log("- Deployer registered as test affiliate");
     console.log("- 5% commission rate set");
-    console.log("- Minimum payout: 10 WRT");
+    console.log("- Minimum payout: 10 ART");
   }
 
   console.log("\n🚨 Next steps:");

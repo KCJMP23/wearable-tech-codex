@@ -27,19 +27,19 @@ async function main() {
   console.log("📡 Network:", deployment.network);
   console.log("📦 Contracts to verify:", Object.keys(deployment.contracts).length);
 
-  // Verify WearableRewardsToken
-  console.log("\n🔍 Verifying WearableRewardsToken...");
+  // Verify AffiliateRewardsToken
+  console.log("\n🔍 Verifying AffiliateRewardsToken...");
   try {
     await run("verify:verify", {
       address: deployment.contracts.rewardsToken,
       constructorArguments: [],
     });
-    console.log("✅ WearableRewardsToken verified successfully");
+    console.log("✅ AffiliateRewardsToken verified successfully");
   } catch (error: any) {
     if (error.message.includes("Already Verified")) {
-      console.log("✅ WearableRewardsToken already verified");
+      console.log("✅ AffiliateRewardsToken already verified");
     } else {
-      console.error("❌ Failed to verify WearableRewardsToken:", error.message);
+      console.error("❌ Failed to verify AffiliateRewardsToken:", error.message);
     }
   }
 

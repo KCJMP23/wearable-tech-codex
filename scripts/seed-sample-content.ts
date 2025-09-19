@@ -11,8 +11,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Real Amazon wearable products with current pricing
-const wearableProducts = [
+// Sample tech products with current pricing
+const techProducts = [
   {
     id: 'apple-watch-series-10-46mm',
     asin: 'B0DGHQ2QH6',
@@ -237,7 +237,7 @@ async function seedContent() {
 
     // Store products
     console.log('Storing products...');
-    for (const product of wearableProducts) {
+    for (const product of techProducts) {
       const { error } = await supabase
         .from('products')
         .upsert({

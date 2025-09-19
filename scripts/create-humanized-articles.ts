@@ -10,8 +10,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Real Amazon wearable products with current pricing
-const wearableProducts = [
+// Sample tech products with current pricing
+const techProducts = [
   {
     id: 'apple-watch-series-10-46mm',
     name: 'Apple Watch Series 10 GPS 46mm',
@@ -302,7 +302,7 @@ async function createArticles() {
     
     try {
       // Get products for this article
-      const articleProducts = wearableProducts.filter(p => 
+      const articleProducts = techProducts.filter(p => 
         article.products.includes(p.id)
       );
       
@@ -363,7 +363,7 @@ ${articleProducts.map(p => `
   
   // Create summary
   const summaryFile = path.join(outputDir, 'README.md');
-  const summaryContent = `# Humanized Wearable Tech Content
+  const summaryContent = `# Humanized Tech Content
 
 Generated ${articleTopics.length} humanized articles about wearable technology.
 

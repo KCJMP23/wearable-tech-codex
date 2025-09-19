@@ -10,44 +10,44 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Real Amazon wearable products with current pricing
-const wearableProducts = [
+// Sample tech products with current pricing
+const techProducts = [
   {
-    id: 'apple-watch-series-10-46mm',
-    name: 'Apple Watch Series 10 GPS 46mm',
+    id: 'premium-device-pro-46mm',
+    name: 'Premium Device Pro GPS 46mm',
     asin: 'B0DGHQ2QH6',
     price: 429,
     currency: 'USD',
-    category: 'smartwatch',
-    brand: 'Apple',
+    category: 'smart-device',
+    brand: 'TechBrand',
     features: [
-      'ECG App',
-      'Always-On Retina Display', 
+      'Advanced Monitoring',
+      'Always-On Display', 
       'Water Resistant to 50m',
       'Built-in GPS',
-      'Health and Fitness tracking',
-      'Sleep tracking',
-      'Blood oxygen monitoring'
+      'Performance tracking',
+      'Activity monitoring',
+      'Wellness features'
     ],
-    amazonUrl: 'https://www.amazon.com/dp/B0DGHQ2QH6',
-    description: 'The most advanced Apple Watch yet with larger display and faster charging'
+    amazonUrl: 'https://example.com/affiliate-link',
+    description: 'The most advanced smart device yet with larger display and faster charging'
   },
   {
-    id: 'fitbit-charge-6',
-    name: 'Fitbit Charge 6 Fitness Tracker',
+    id: 'activity-tracker-6',
+    name: 'Activity Tracker 6 Performance Monitor',
     asin: 'B0CC644KMJ',
     price: 159,
     currency: 'USD',
-    category: 'fitness-tracker',
-    brand: 'Fitbit',
+    category: 'activity-tracker',
+    brand: 'TrackerBrand',
     features: [
       'Built-in GPS',
       '6+ day battery life',
-      '40+ exercise modes',
-      'Heart rate tracking',
-      'Sleep score analysis',
-      'Google apps integration',
-      'Premium membership included'
+      '40+ activity modes',
+      'Performance tracking',
+      'Wellness analysis',
+      'Smart apps integration',
+      'Premium features included'
     ],
     amazonUrl: 'https://www.amazon.com/dp/B0CC644KMJ',
     description: 'Advanced fitness tracker with Google apps and heart rate on exercise equipment'
@@ -232,7 +232,7 @@ async function generateAllArticles() {
 
   // Store products in database
   console.log('Storing products...');
-  for (const product of wearableProducts) {
+  for (const product of techProducts) {
     await supabase
       .from('products')
       .upsert({
@@ -266,7 +266,7 @@ async function generateAllArticles() {
     
     try {
       // Get products for this article
-      const articleProducts = wearableProducts.filter(p => 
+      const articleProducts = techProducts.filter(p => 
         articleTopic.products.includes(p.id)
       );
       

@@ -23,9 +23,9 @@ INSERT INTO public.seasonal_showcases (
 )
 SELECT 
   tenant.id,
-  'Fall Fitness Revolution',
-  'Perfect Weather for Outdoor Training',
-  'Our AI discovered the top-rated GPS watches and fitness trackers for fall hiking, running, and outdoor adventures',
+  'Fall Tech Revolution',
+  'Perfect Season for Outdoor Activities',
+  'Our AI discovered the top-rated GPS devices and activity trackers for fall adventures and outdoor activities',
   'Shop Fall Collection',
   '/nectarheat/collections/fall-outdoor',
   'FALL 2025',
@@ -42,7 +42,7 @@ SELECT
   tenant.id,
   'Back to School Tech',
   'Smart Devices for Students',
-  'AI-selected smartwatches and fitness bands perfect for campus life, study tracking, and staying healthy',
+  'AI-selected smart devices and activity bands perfect for campus life, productivity tracking, and staying organized',
   'Explore Student Deals',
   '/nectarheat/collections/student',
   'STUDENT SAVINGS',

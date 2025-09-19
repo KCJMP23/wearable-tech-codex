@@ -1,6 +1,6 @@
 # Blockchain-Based Affiliate Attribution System
 
-A comprehensive blockchain solution for transparent affiliate attribution, commission distribution, and rewards management in the Wearable Tech Codex platform.
+A comprehensive blockchain solution for transparent affiliate attribution, commission distribution, and rewards management in the affiliate platform.
 
 ## 🎯 Overview
 
@@ -27,7 +27,7 @@ The main contract handling affiliate attribution and commission distribution:
 - **Fraud Detection**: Built-in anti-fraud mechanisms
 - **Access Control**: Role-based permissions for operations
 
-#### WearableRewardsToken.sol
+#### AffiliateRewardsToken.sol
 ERC20 token for platform rewards and loyalty programs:
 
 - **Mintable**: Controlled token minting for rewards
@@ -404,7 +404,7 @@ export POLYGON_RPC_URL=https://backup-rpc.com
 
 ### Community
 
-- [GitHub Issues](https://github.com/your-org/wearable-tech-codex/issues)
+- [GitHub Issues](https://github.com/your-org/affiliate-platform/issues)
 - [Discord Community](https://discord.gg/your-community)
 - [Developer Documentation](https://docs.your-platform.com)
 

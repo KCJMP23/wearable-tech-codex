@@ -38,7 +38,7 @@ export class SeasonalAgent extends BaseAgent {
         text: '#FFE3C4', 
         muted: '#FBBF24' 
       },
-      contentFocus: ['holiday gift guides', 'year-end reviews', 'new year fitness goals'],
+      contentFocus: ['holiday gift guides', 'year-end reviews', 'new year goal setting'],
       promotions: ['Black Friday deals', 'Holiday gift recommendations', 'Year-end roundups']
     },
     {
@@ -51,8 +51,8 @@ export class SeasonalAgent extends BaseAgent {
         text: '#064E3B', 
         muted: '#6EE7B7' 
       },
-      contentFocus: ['spring fitness routines', 'outdoor activity tracking', 'health goal setting'],
-      promotions: ['Spring fitness challenges', 'Outdoor gear recommendations', 'Fresh start guides']
+      contentFocus: ['spring activity routines', 'outdoor activity tracking', 'wellness goal setting'],
+      promotions: ['Spring activity challenges', 'Outdoor gear recommendations', 'Fresh start guides']
     },
     {
       name: 'Summer Active',
@@ -64,8 +64,8 @@ export class SeasonalAgent extends BaseAgent {
         text: '#0C4A6E', 
         muted: '#67E8F9' 
       },
-      contentFocus: ['summer workouts', 'water resistance guides', 'vacation fitness tracking'],
-      promotions: ['Summer sports gear', 'Waterproof wearables', 'Vacation essentials']
+      contentFocus: ['summer activities', 'water resistance guides', 'vacation activity tracking'],
+      promotions: ['Summer activity gear', 'Waterproof devices', 'Vacation essentials']
     },
     {
       name: 'Back to School',
@@ -78,7 +78,7 @@ export class SeasonalAgent extends BaseAgent {
         muted: '#C4B5FD' 
       },
       contentFocus: ['student wellness', 'productivity tracking', 'study break workouts'],
-      promotions: ['Student discounts', 'Productivity wearables', 'Back to routine guides']
+      promotions: ['Student discounts', 'Productivity devices', 'Back to routine guides']
     },
     {
       name: 'Winter Wellness',
@@ -90,7 +90,7 @@ export class SeasonalAgent extends BaseAgent {
         text: '#1E3A8A', 
         muted: '#93C5FD' 
       },
-      contentFocus: ['indoor fitness', 'winter wellness tips', 'seasonal affective disorder'],
+      contentFocus: ['indoor activities', 'winter wellness tips', 'seasonal wellness'],
       promotions: ['Indoor workout gear', 'Winter wellness', 'New year motivation']
     }
   ];
@@ -417,7 +417,7 @@ export class SeasonalAgent extends BaseAgent {
   }
 
   private generatePromotionalMessage(promotion: string, theme: string): string {
-    return `🎉 ${theme} Special: ${promotion}! Discover the perfect wearable technology for this season. Limited time insights and recommendations.`;
+    return `🎉 ${theme} Special: ${promotion}! Discover the perfect technology for this season. Limited time insights and recommendations.`;
   }
 
   private async createPromotionalContent(
@@ -451,9 +451,9 @@ export class SeasonalAgent extends BaseAgent {
   private getSeasonalTrendData(month: number): any {
     // Mock seasonal trend analysis
     const trends = {
-      1: { trendScore: 85, focus: 'New Year fitness goals' },
+      1: { trendScore: 85, focus: 'New Year goal setting' },
       2: { trendScore: 70, focus: 'Winter wellness' },
-      3: { trendScore: 90, focus: 'Spring fitness prep' },
+      3: { trendScore: 90, focus: 'Spring activity prep' },
       6: { trendScore: 95, focus: 'Summer activity tracking' },
       11: { trendScore: 100, focus: 'Holiday shopping' },
       12: { trendScore: 98, focus: 'Year-end reviews' }

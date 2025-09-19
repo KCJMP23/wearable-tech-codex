@@ -295,12 +295,12 @@ export class NewsletterAgent extends BaseAgent {
         description: 'All active newsletter subscribers'
       },
       {
-        name: 'Fitness Enthusiasts',
+        name: 'Performance Enthusiasts',
         rules: { 
-          interests: ['fitness', 'health', 'running', 'cycling'],
-          device_preferences: ['fitness_tracker', 'smartwatch']
+          interests: ['performance', 'wellness', 'activities', 'optimization'],
+          device_preferences: ['activity_tracker', 'smart_device']
         },
-        description: 'Users interested in fitness tracking devices'
+        description: 'Users interested in performance tracking devices'
       },
       {
         name: 'Tech Early Adopters',

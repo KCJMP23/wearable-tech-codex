@@ -8,11 +8,11 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
- * @title WearableRewardsToken
- * @dev ERC20 token for wearable tech affiliate platform rewards and loyalty programs
+ * @title AffiliateRewardsToken
+ * @dev ERC20 token for affiliate platform rewards and loyalty programs
  * @notice This token is used for affiliate rewards, user loyalty points, and platform incentives
  */
-contract WearableRewardsToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ReentrancyGuard {
+contract AffiliateRewardsToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ReentrancyGuard {
     // Roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -60,7 +60,7 @@ contract WearableRewardsToken is ERC20, ERC20Burnable, ERC20Pausable, AccessCont
     event RewardsClaimed(address indexed user, uint256 amount);
     event RewardTierAdded(uint256 minStake, uint256 multiplier);
 
-    constructor() ERC20("Wearable Rewards Token", "WRT") {
+    constructor() ERC20("Affiliate Rewards Token", "ART") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -79,25 +79,25 @@ contract WearableRewardsToken is ERC20, ERC20Burnable, ERC20Pausable, AccessCont
      */
     function _initializeRewardTiers() internal {
         rewardTiers.push(RewardTier({
-            minStake: 1000 * 10**18,     // 1,000 WRT
+            minStake: 1000 * 10**18,     // 1,000 ART
             multiplier: 1000,            // 10%
             active: true
         }));
 
         rewardTiers.push(RewardTier({
-            minStake: 10000 * 10**18,    // 10,000 WRT
+            minStake: 10000 * 10**18,    // 10,000 ART
             multiplier: 1250,            // 12.5%
             active: true
         }));
 
         rewardTiers.push(RewardTier({
-            minStake: 50000 * 10**18,    // 50,000 WRT
+            minStake: 50000 * 10**18,    // 50,000 ART
             multiplier: 1500,            // 15%
             active: true
         }));
 
         rewardTiers.push(RewardTier({
-            minStake: 100000 * 10**18,   // 100,000 WRT
+            minStake: 100000 * 10**18,   // 100,000 ART
             multiplier: 2000,            // 20%
             active: true
         }));

@@ -360,28 +360,28 @@ export class EditorialAgent extends BaseAgent {
       tenant: tenant || {},
       taxonomy: taxonomy || [],
       products: products || [],
-      niche: tenant?.name || 'Wearable Technology'
+      niche: tenant?.name || 'Technology Products'
     };
   }
 
   private async generateTopics(tenantData: any, count: number, deps: AgentDependencies): Promise<string[]> {
     // Mock topic generation - in real implementation, use trends analysis
     const baseTopics = [
-      'Best smartwatch features for fitness tracking',
-      'How to choose the right wearable device',
-      'Comparing top fitness trackers',
-      'Wearable technology trends',
-      'Health monitoring devices review',
-      'Sleep tracking accuracy analysis',
+      'Best device features for performance tracking',
+      'How to choose the right smart device',
+      'Comparing top activity trackers',
+      'Smart technology trends',
+      'Performance monitoring devices review',
+      'Wellness tracking accuracy analysis',
       'Battery life optimization tips',
-      'Water resistance standards explained',
-      'Heart rate monitor comparison',
+      'Durability standards explained',
+      'Performance monitor comparison',
       'Smart notifications setup guide'
     ];
 
     // Personalize for tenant
     const personalizedTopics = baseTopics.map(topic => 
-      topic.replace('wearable', tenantData.niche.toLowerCase())
+      topic.replace('smart device', tenantData.niche.toLowerCase())
     );
 
     return personalizedTopics.slice(0, count);
@@ -409,21 +409,21 @@ export class EditorialAgent extends BaseAgent {
   private getSeasonalTopics(): string[] {
     const month = new Date().getMonth();
     const seasonalMap: Record<number, string[]> = {
-      0: ['New Year fitness goals with wearables', 'Winter workout tracking'],
-      1: ['Valentine\'s Day tech gifts', 'Indoor fitness tracking'],
-      2: ['Spring fitness preparation', 'Outdoor activity monitoring'],
+      0: ['New Year goals with smart tech', 'Winter activity tracking'],
+      1: ['Valentine\'s Day tech gifts', 'Indoor activity tracking'],
+      2: ['Spring preparation', 'Outdoor activity monitoring'],
       3: ['Easter tech deals', 'Spring cleaning device maintenance'],
-      4: ['Mother\'s Day wearable gifts', 'Spring fitness challenges'],
+      4: ['Mother\'s Day smart gifts', 'Spring activity challenges'],
       5: ['Father\'s Day tech guide', 'Summer activity preparation'],
-      6: ['Summer fitness tracking', 'Vacation wearable essentials'],
-      7: ['Back to school tech', 'Late summer fitness'],
-      8: ['Fall fitness routine', 'Back to work wellness'],
-      9: ['Halloween tech fun', 'Autumn health monitoring'],
+      6: ['Summer activity tracking', 'Vacation tech essentials'],
+      7: ['Back to school tech', 'Late summer activities'],
+      8: ['Fall routine optimization', 'Back to work wellness'],
+      9: ['Halloween tech fun', 'Autumn wellness monitoring'],
       10: ['Black Friday deals', 'Holiday gift guides'],
-      11: ['Holiday tech gifts', 'Year-end fitness review']
+      11: ['Holiday tech gifts', 'Year-end performance review']
     };
 
-    return seasonalMap[month] || ['Essential wearable device guide'];
+    return seasonalMap[month] || ['Essential smart device guide'];
   }
 
   private async getTrendingTopics(niche: string, deps: AgentDependencies): Promise<string[]> {

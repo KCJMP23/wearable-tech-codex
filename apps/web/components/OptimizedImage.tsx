@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { cn } from '@affiliate-factory/ui/src/lib/utils';
+import { imageConfig } from '../config/performance';
 
 interface OptimizedImageProps {
   src: string;
@@ -17,6 +18,9 @@ interface OptimizedImageProps {
   placeholder?: 'blur' | 'empty';
   blurDataURL?: string;
   onLoadingComplete?: () => void;
+  variant?: 'thumbnail' | 'card' | 'hero' | 'product';
+  lazy?: boolean;
+  loading?: 'lazy' | 'eager';
 }
 
 export function OptimizedImage({
@@ -28,13 +32,48 @@ export function OptimizedImage({
   priority = false,
   fill = false,
   sizes,
-  quality = 75,
+  quality,
   placeholder = 'empty',
   blurDataURL,
   onLoadingComplete,
+  variant = 'card',
+  lazy = true,
+  loading,
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isInView, setIsInView] = useState(!lazy || priority);
+  const imageRef = useRef<HTMLDivElement>(null);
+
+  // Get optimized quality based on variant
+  const imageQuality = quality || imageConfig.quality[variant] || imageConfig.quality.default;
+  
+  // Get optimized sizes based on variant
+  const imageSizes = sizes || imageConfig.sizes[variant] || imageConfig.sizes.card;
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    if (!lazy || priority || isInView) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: imageConfig.lazyLoading.rootMargin,
+        threshold: imageConfig.lazyLoading.threshold,
+      }
+    );
+
+    if (imageRef.current) {
+      observer.observe(imageRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [lazy, priority, isInView]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -47,7 +86,7 @@ export function OptimizedImage({
   };
 
   // Fallback image
-  const fallbackSrc = '/images/placeholder.png';
+  const fallbackSrc = '/images/placeholder.webp';
 
   if (error) {
     return (
@@ -57,21 +96,32 @@ export function OptimizedImage({
     );
   }
 
+  if (!isInView) {
+    return (
+      <div 
+        ref={imageRef}
+        className={cn('bg-gray-200 animate-pulse', className)}
+        style={{ width: width || '100%', height: height || 'auto' }}
+      />
+    );
+  }
+
   if (fill) {
     return (
-      <div className={cn('relative', className)}>
+      <div ref={imageRef} className={cn('relative', className)}>
         {isLoading && (
           <div className="absolute inset-0 bg-gray-200 animate-pulse" />
         )}
         <Image
-          src={src}
+          src={error ? fallbackSrc : src}
           alt={alt}
           fill
-          sizes={sizes || '100vw'}
-          quality={quality}
+          sizes={imageSizes}
+          quality={imageQuality}
           priority={priority}
           placeholder={placeholder}
           blurDataURL={blurDataURL}
+          loading={loading || (priority ? 'eager' : 'lazy')}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
@@ -84,7 +134,7 @@ export function OptimizedImage({
   }
 
   return (
-    <div className={cn('relative', className)}>
+    <div ref={imageRef} className={cn('relative', className)}>
       {isLoading && (
         <div 
           className="absolute inset-0 bg-gray-200 animate-pulse"
@@ -92,14 +142,16 @@ export function OptimizedImage({
         />
       )}
       <Image
-        src={src}
+        src={error ? fallbackSrc : src}
         alt={alt}
         width={width || 500}
         height={height || 500}
-        quality={quality}
+        quality={imageQuality}
         priority={priority}
         placeholder={placeholder}
         blurDataURL={blurDataURL}
+        sizes={imageSizes}
+        loading={loading || (priority ? 'eager' : 'lazy')}
         onLoad={handleLoad}
         onError={handleError}
         className={cn(

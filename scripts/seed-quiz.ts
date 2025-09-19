@@ -8,21 +8,21 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const wearableQuiz = {
+const productQuiz = {
   id: '01234567-89ab-cdef-0123-456789abcde2',
-  tenant_id: '01234567-89ab-cdef-0123-456789abcdef', // Wearable Tech Codex tenant
-  title: 'Find Your Perfect Wearable Device',
+  tenant_id: '01234567-89ab-cdef-0123-456789abcdef', // Affiliate Platform tenant
+  title: 'Find Your Perfect Tech Device',
   description: 'Answer a few questions to get personalized recommendations',
   active: true,
   schema: [
     {
       id: 'primary_use',
-      question: 'What will you primarily use your wearable for?',
+      question: 'What will you primarily use your device for?',
       type: 'single',
       choices: [
-        { id: 'fitness', label: 'Fitness & Health Tracking', value: 'fitness' },
-        { id: 'smartwatch', label: 'Smart Features & Notifications', value: 'smartwatch' },
-        { id: 'sports', label: 'Specific Sports Training', value: 'sports' },
+        { id: 'performance', label: 'Performance & Activity Tracking', value: 'performance' },
+        { id: 'smart', label: 'Smart Features & Notifications', value: 'smart' },
+        { id: 'professional', label: 'Professional & Training', value: 'professional' },
         { id: 'style', label: 'Fashion & Style', value: 'style' }
       ]
     },

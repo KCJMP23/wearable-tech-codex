@@ -33,7 +33,7 @@ The repository includes a CLI tool accessible via `pnpm exec site`:
 ## Architecture
 
 ### Monorepo Structure
-This is a pnpm workspace monorepo for a multi-tenant wearable tech affiliate platform:
+This is a pnpm workspace monorepo for a multi-tenant affiliate platform:
 
 - **apps/web**: Next.js 14 app with App Router, serving both storefront and admin interfaces
   - Uses route groups: `(site)` for public storefront, `(admin)` for admin dashboard
