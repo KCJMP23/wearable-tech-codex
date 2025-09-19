@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@affiliate-factory/sdk/supabase/server'
+import { SupabaseServer } from '@affiliate-factory/sdk'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ brandId: string }> }
 ) {
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const { brandId } = await params
 
     const { data: partnerships, error } = await supabase

@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@affiliate-factory/sdk/supabase/server'
+import { SupabaseServer } from '@affiliate-factory/sdk'
 
 // Mobile push notification system
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
     const type = searchParams.get('type')

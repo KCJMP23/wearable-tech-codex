@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@affiliate-factory/sdk/supabase/server'
+import { SupabaseServer } from '@affiliate-factory/sdk'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const tier = searchParams.get('tier')
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const body = await request.json()
 
     const {

@@ -12,3 +12,7 @@ export * from './queue';
 export * from './services/mcp-server';
 // Temporarily disabled until blockchain package is built
 // export * from './blockchain';
+
+// Export supabase modules with namespacing
+export * as SupabaseServer from './supabase/server';
+export * as SupabaseClient from './supabase/client';

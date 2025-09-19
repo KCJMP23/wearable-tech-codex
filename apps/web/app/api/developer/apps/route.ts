@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@affiliate-factory/sdk/supabase/server'
+import { SupabaseServer } from '@affiliate-factory/sdk'
 import { createHash, randomBytes } from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const { searchParams } = new URL(request.url)
     const developer_id = searchParams.get('developer_id')
     const category = searchParams.get('category')
