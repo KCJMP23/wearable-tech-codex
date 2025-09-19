@@ -11,88 +11,92 @@ import { WoodstockFooter } from '../../../components/WoodstockFooter';
 import { FAQAccordion } from '../../../components/FAQAccordion';
 import { ProductCarousel } from '../../../components/ProductCarousel';
 import { NewsletterModalProvider } from '../../../components/NewsletterModalProvider';
+import { StickyCategories } from '../../../components/StickyCategories';
+import { TrendingProducts } from '../../../components/TrendingProducts';
+import { ProductInsights } from '../../../components/ProductInsights';
+import { SeasonalShowcase } from '../../../components/SeasonalShowcase';
 
 interface TenantPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
-// Categories for horizontal scroll with pinning
-const categories = [
+// TODO: Load categories dynamically from database based on tenant niche
+// For now, using generic categories that will be replaced with database-driven ones
+const getDefaultCategories = (niche: string) => [
   { id: 'featured', name: 'Featured', pinned: true },
-  { id: 'smartwatches', name: 'Smartwatches' },
-  { id: 'fitness-trackers', name: 'Fitness Trackers' },
-  { id: 'health-monitors', name: 'Health Monitors' },
-  { id: 'smart-rings', name: 'Smart Rings' },
-  { id: 'sleep-trackers', name: 'Sleep Trackers' },
-  { id: 'posture-devices', name: 'Posture Devices' },
-  { id: 'smart-glasses', name: 'Smart Glasses' },
+  { id: 'bestsellers', name: 'Best Sellers' },
+  { id: 'new-arrivals', name: 'New Arrivals' },
+  { id: 'trending', name: 'Trending' },
+  { id: 'deals', name: 'Deals' },
+  { id: 'premium', name: 'Premium' },
+  { id: 'budget', name: 'Budget-Friendly' },
   { id: 'accessories', name: 'Accessories' },
 ];
 
-// FAQ data for wearable technology
-const faqItems = [
+// Generic FAQ that adapts to any niche
+const getGenericFaqItems = (niche: string) => [
   {
-    id: 'battery-life',
-    question: 'How long do wearable device batteries typically last?',
-    answer: 'Battery life varies significantly by device type. Smartwatches typically last 1-3 days, basic fitness trackers can last 5-7 days, and smart rings often provide 4-7 days of use. Factors like screen brightness, GPS usage, and health monitoring frequency affect battery life.'
+    id: 'product-quality',
+    question: `How do you ensure product quality for ${niche.toLowerCase()}?`,
+    answer: `We use AI-powered analysis to evaluate thousands of customer reviews, expert opinions, and product specifications. Our algorithm considers factors like durability, performance, customer satisfaction, and value for money to recommend only the highest-rated ${niche.toLowerCase()}.`
   },
   {
-    id: 'water-resistance',
-    question: 'Are wearable devices waterproof?',
-    answer: 'Most modern wearables are water-resistant rather than waterproof. Look for ratings like IP68 (dust and water resistant) or 5ATM (safe for swimming). Always check the specific rating for your device and avoid hot water, soaps, or high-pressure water.'
+    id: 'price-tracking',
+    question: 'How does your price tracking work?',
+    answer: 'Our system monitors prices across multiple retailers 24/7. When prices drop on products you\'re interested in, we send instant alerts. We also track price history to help you identify the best time to buy and avoid paying more than necessary.'
   },
   {
-    id: 'accuracy',
-    question: 'How accurate are health measurements from wearables?',
-    answer: 'Accuracy varies by metric and device quality. Heart rate monitoring is generally quite accurate (±5-10%), while sleep tracking and step counting are reliable for trends. However, wearables should not replace professional medical devices for health diagnosis.'
+    id: 'recommendations',
+    question: 'How are product recommendations personalized?',
+    answer: 'Our AI analyzes your browsing history, preferences, budget range, and stated needs to suggest products that match your specific requirements. We also consider seasonal trends, expert reviews, and real customer feedback to ensure relevant recommendations.'
   },
   {
-    id: 'compatibility',
-    question: 'Do wearables work with all smartphones?',
-    answer: 'Most wearables are compatible with both iOS and Android, but some features may be limited when used across ecosystems. Apple Watch only works with iPhone, while most other brands offer broader compatibility. Always check compatibility before purchasing.'
+    id: 'affiliate-disclosure',
+    question: 'Do you earn commission from purchases?',
+    answer: 'Yes, we may earn a small commission when you purchase through our affiliate links. This doesn\'t cost you anything extra and helps us maintain our free service. Our recommendations are always based on merit and value, not commission rates.'
   },
   {
-    id: 'data-privacy',
-    question: 'How is my health data protected?',
-    answer: 'Reputable manufacturers use encryption and secure servers to protect your data. Most allow you to control what data is shared and with whom. Review privacy policies and consider using devices that store data locally or offer strong privacy controls.'
+    id: 'return-policy',
+    question: 'What if I\'m not satisfied with a recommended product?',
+    answer: 'Return policies depend on the retailer where you make your purchase. We provide links to return policies and customer service contacts for each retailer. Many offer 30-day return windows, and we can help you navigate any issues.'
   },
   {
-    id: 'replacement',
-    question: 'When should I replace my wearable device?',
-    answer: 'Consider replacement when battery life significantly degrades (typically after 2-3 years), when software updates are no longer supported, or when newer health features become important to you. Physical damage or strap deterioration may also warrant replacement.'
+    id: 'updates',
+    question: 'How often do you update product information?',
+    answer: 'Product information, prices, and availability are updated multiple times daily. Reviews and ratings are refreshed weekly, and our AI re-evaluates recommendations based on new data, seasonal trends, and market changes.'
   }
 ];
 
-// Hero slides with wearable tech imagery
-const heroSlides = [
+// Generic hero slides that adapt to any niche
+const getGenericHeroSlides = (niche: string) => [
   {
     id: 'slide-1',
-    title: 'Smart Wellness',
+    title: `Premium ${niche}`,
     subtitle: 'New Collection',
-    description: 'Track your health, optimize your performance, and live better with the latest wearable technology.',
+    description: `Discover the latest and greatest ${niche.toLowerCase()} curated by our AI-powered platform.`,
     buttonText: 'Shop Now',
     buttonLink: '/products',
-    image: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=1920&h=1080&fit=crop',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&h=1080&fit=crop',
     textPosition: 'left' as const,
   },
   {
     id: 'slide-2',
-    title: 'Fitness Revolution',
-    subtitle: 'Best Sellers',
-    description: 'Premium fitness trackers and smartwatches designed to elevate your workout experience.',
+    title: 'Best Sellers',
+    subtitle: 'Top Rated',
+    description: `The most popular ${niche.toLowerCase()} chosen by thousands of satisfied customers.`,
     buttonText: 'Discover',
     buttonLink: '/collections/best-sellers',
-    image: 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=1920&h=1080&fit=crop',
+    image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1920&h=1080&fit=crop',
     textPosition: 'center' as const,
   },
   {
     id: 'slide-3',
-    title: 'Health Monitoring',
-    subtitle: 'Advanced Tech',
-    description: 'Stay ahead of your health with continuous monitoring and AI-powered insights.',
+    title: 'Smart Shopping',
+    subtitle: 'AI-Powered',
+    description: 'Get personalized recommendations and never miss a great deal with our intelligent platform.',
     buttonText: 'Learn More',
     buttonLink: '/guides',
-    image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&h=1080&fit=crop',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1920&h=1080&fit=crop',
     textPosition: 'right' as const,
   },
 ];
@@ -108,6 +112,11 @@ export default async function TenantHomePage({ params }: TenantPageProps) {
     getFeaturedProducts(tenant.id),
     getRecentPosts(tenant.id)
   ]);
+
+  const tenantNiche = (tenant as any).niche || 'Products';
+  const categories = getDefaultCategories(tenantNiche);
+  const faqItems = getGenericFaqItems(tenantNiche);
+  const heroSlides = getGenericHeroSlides(tenantNiche);
 
   return (
     <div className="min-h-screen bg-white">
@@ -236,30 +245,30 @@ export default async function TenantHomePage({ params }: TenantPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Shop by Category</h2>
-            <p className="text-lg text-gray-600">Find the perfect wearable tech for your lifestyle</p>
+            <p className="text-lg text-gray-600">Find the perfect {tenantNiche.toLowerCase()} for your lifestyle</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                name: 'Smartwatches',
+                name: 'Best Sellers',
                 image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop',
-                link: '/products?category=smartwatches'
+                link: '/products?category=bestsellers'
               },
               {
-                name: 'Fitness Trackers',
+                name: 'New Arrivals',
                 image: 'https://images.unsplash.com/photo-1576243345690-4e4b79b63288?w=400&h=300&fit=crop',
-                link: '/products?category=fitness-trackers'
+                link: '/products?category=new-arrivals'
               },
               {
-                name: 'Health Monitors',
+                name: 'Premium',
                 image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=400&h=300&fit=crop',
-                link: '/products?category=health-monitors'
+                link: '/products?category=premium'
               },
               {
-                name: 'Smart Rings',
+                name: 'Budget-Friendly',
                 image: 'https://images.unsplash.com/photo-1608481337062-4093bf3ed404?w=400&h=300&fit=crop',
-                link: '/products?category=smart-rings'
+                link: '/products?category=budget'
               }
             ].map((category) => (
               <Link
@@ -477,82 +486,12 @@ export default async function TenantHomePage({ params }: TenantPageProps) {
         </div>
       </section>
 
-      {/* Promotional Banners */}
+      {/* Seasonal Showcase - AI-Powered Recommendations */}
+      <SeasonalShowcase tenantSlug={tenantSlug} tenantId={tenant.id} />
+
+      {/* Single Wide Banner */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Flash Sale Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 shadow-xl">
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative p-8 lg:p-12 text-white">
-                <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold mb-4 animate-pulse">
-                  ⚡ FLASH SALE
-                </div>
-                <h3 className="text-3xl lg:text-4xl font-bold mb-4">
-                  Up to 40% Off
-                </h3>
-                <p className="text-lg lg:text-xl text-white/90 mb-6">
-                  Limited time deals on premium smartwatches and fitness trackers
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link
-                    href={`/${tenantSlug}/deals`}
-                    className="inline-flex items-center justify-center bg-white text-red-600 font-bold px-6 py-3 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    Shop Deals
-                  </Link>
-                  <div className="flex items-center text-white/90">
-                    <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-sm font-medium">Ends in 2 days</span>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
-            </div>
-
-            {/* Free Shipping Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 shadow-xl">
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative p-8 lg:p-12 text-white">
-                <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold mb-4">
-                  🚚 FREE SHIPPING
-                </div>
-                <h3 className="text-3xl lg:text-4xl font-bold mb-4">
-                  Free Delivery
-                </h3>
-                <p className="text-lg lg:text-xl text-white/90 mb-6">
-                  On all orders over $99. Fast, secure, and insured shipping worldwide
-                </p>
-                <div className="space-y-3">
-                  <div className="flex items-center text-white/90">
-                    <svg className="h-5 w-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm">2-day delivery available</span>
-                  </div>
-                  <div className="flex items-center text-white/90">
-                    <svg className="h-5 w-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm">30-day returns</span>
-                  </div>
-                  <div className="flex items-center text-white/90">
-                    <svg className="h-5 w-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-sm">Secure packaging</span>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
-            </div>
-          </div>
-
-          {/* Single Wide Banner */}
           <div className="mt-8">
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 shadow-xl">
               <div className="absolute inset-0 bg-black/20"></div>
@@ -976,172 +915,15 @@ export default async function TenantHomePage({ params }: TenantPageProps) {
         </div>
       </section>
 
-      {/* Shipping & Return Information */}
-      <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Shipping & Returns</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Fast, secure delivery worldwide with hassle-free returns
-            </p>
-          </div>
+      {/* Dynamic Categories with Pinning Effect */}
+      {/* Sticky Categories Section - Like Woodstock Theme */}
+      <StickyCategories tenantSlug={tenantSlug} tenantId={tenant.id} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {/* Free Shipping */}
-            <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Shipping</h3>
-              <p className="text-sm text-gray-600 mb-3">On orders over $99</p>
-              <div className="text-xs text-gray-500">
-                <div>• Standard: 5-7 business days</div>
-                <div>• Express: 2-3 business days</div>
-              </div>
-            </div>
+      {/* Trending Products Section */}
+      <TrendingProducts tenantSlug={tenantSlug} tenantNiche={tenantNiche} />
 
-            {/* Easy Returns */}
-            <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">30-Day Returns</h3>
-              <p className="text-sm text-gray-600 mb-3">Hassle-free returns</p>
-              <div className="text-xs text-gray-500">
-                <div>• No questions asked</div>
-                <div>• Free return shipping</div>
-              </div>
-            </div>
-
-            {/* Secure Packaging */}
-            <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Secure Packaging</h3>
-              <p className="text-sm text-gray-600 mb-3">Protected delivery</p>
-              <div className="text-xs text-gray-500">
-                <div>• Insured shipments</div>
-                <div>• Eco-friendly materials</div>
-              </div>
-            </div>
-
-            {/* Global Shipping */}
-            <div className="text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Global Delivery</h3>
-              <p className="text-sm text-gray-600 mb-3">Worldwide shipping</p>
-              <div className="text-xs text-gray-500">
-                <div>• 190+ countries</div>
-                <div>• Customs handled</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Policies */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                  Shipping Information
-                </h3>
-                <div className="space-y-3 text-sm text-gray-700">
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="font-medium">Standard Shipping</span>
-                    <span>5-7 business days</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="font-medium">Express Shipping</span>
-                    <span>2-3 business days</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="font-medium">Overnight Shipping</span>
-                    <span>Next business day</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="font-medium">International</span>
-                    <span>7-14 business days</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                  <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Return Policy
-                </h3>
-                <div className="space-y-3 text-sm text-gray-700">
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>30-day return window from delivery date</span>
-                  </div>
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>Items must be in original condition</span>
-                  </div>
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>Free return shipping included</span>
-                  </div>
-                  <div className="flex items-start">
-                    <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>Refunds processed within 3-5 business days</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-              <p className="text-gray-600 mb-4">
-                Have questions about shipping or returns?
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href={`/${tenantSlug}/support`}
-                  className="inline-flex items-center text-blue-600 font-semibold hover:text-blue-700 transition-colors"
-                >
-                  Contact Support
-                  <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </Link>
-                <Link
-                  href={`/${tenantSlug}/shipping-policy`}
-                  className="inline-flex items-center text-gray-600 font-medium hover:text-gray-700 transition-colors"
-                >
-                  View Full Policy
-                  <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Product Insights Section */}
+      <ProductInsights tenantSlug={tenantSlug} tenantNiche={tenantNiche} />
 
       {/* FAQ Section */}
       <FAQAccordion items={faqItems} />

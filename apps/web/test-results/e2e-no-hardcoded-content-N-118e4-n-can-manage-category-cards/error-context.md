@@ -1,0 +1,166 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - link "N Nectar & Heat" [ref=e6] [cursor=pointer]:
+        - /url: /nectarheat
+        - generic [ref=e8] [cursor=pointer]: "N"
+        - generic [ref=e9] [cursor=pointer]: Nectar & Heat
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e12] [cursor=pointer]:
+            - /url: /admin/nectarheat/dashboard
+            - img [ref=e13] [cursor=pointer]
+            - text: Dashboard
+          - link "Homepage" [ref=e15] [cursor=pointer]:
+            - /url: /admin/nectarheat/homepage
+            - img [ref=e16] [cursor=pointer]
+            - text: Homepage
+          - link "Products" [ref=e18] [cursor=pointer]:
+            - /url: /admin/nectarheat/products
+            - img [ref=e19] [cursor=pointer]
+            - text: Products
+          - link "Posts" [ref=e21] [cursor=pointer]:
+            - /url: /admin/nectarheat/posts
+            - img [ref=e22] [cursor=pointer]
+            - text: Posts
+          - link "Calendar" [ref=e24] [cursor=pointer]:
+            - /url: /admin/nectarheat/calendar
+            - img [ref=e25] [cursor=pointer]
+            - text: Calendar
+          - link "Agents" [ref=e27] [cursor=pointer]:
+            - /url: /admin/nectarheat/agents
+            - img [ref=e28] [cursor=pointer]
+            - text: Agents
+          - link "Webhooks" [ref=e30] [cursor=pointer]:
+            - /url: /admin/nectarheat/webhooks
+            - img [ref=e31] [cursor=pointer]
+            - text: Webhooks
+          - link "Analytics" [ref=e33] [cursor=pointer]:
+            - /url: /admin/nectarheat/analytics
+            - img [ref=e34] [cursor=pointer]
+            - text: Analytics
+          - link "Settings" [ref=e36] [cursor=pointer]:
+            - /url: /admin/nectarheat/settings
+            - img [ref=e37] [cursor=pointer]
+            - text: Settings
+        - link "View storefront →" [ref=e40] [cursor=pointer]:
+          - /url: /nectarheat
+    - generic [ref=e41]:
+      - banner [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e45]:
+            - heading "Nectar & Heat" [level=1] [ref=e46]
+            - paragraph [ref=e47]: Affiliate management dashboard
+          - generic [ref=e49]:
+            - text: Signed in as
+            - generic [ref=e50]: Admin
+      - main [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - heading "Category Cards" [level=3] [ref=e54]
+            - paragraph [ref=e55]: Manage the category cards that appear with the sticky scrolling effect on your homepage. Drag to reorder, click to edit, or add new categories.
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - heading "Active Category Cards" [level=4] [ref=e59]
+                - button "Add Category" [ref=e60] [cursor=pointer]:
+                  - img [ref=e61] [cursor=pointer]
+                  - text: Add Category
+              - generic [ref=e63]:
+                - generic [ref=e65]:
+                  - button [ref=e66]:
+                    - img [ref=e67]
+                  - img "Smartwatches" [ref=e70]
+                  - generic [ref=e71]:
+                    - heading "Smartwatches" [level=4] [ref=e72]
+                    - paragraph [ref=e73]: Advanced health tracking on your wrist
+                    - paragraph [ref=e74]: "Slug: smartwatches"
+                  - generic [ref=e75]:
+                    - button "Active" [ref=e76] [cursor=pointer]:
+                      - img [ref=e77] [cursor=pointer]
+                    - button "Edit" [ref=e80] [cursor=pointer]:
+                      - img [ref=e81] [cursor=pointer]
+                    - button "Delete" [ref=e83] [cursor=pointer]:
+                      - img [ref=e84] [cursor=pointer]
+                - generic [ref=e87]:
+                  - button [ref=e88]:
+                    - img [ref=e89]
+                  - img "Fitness Trackers" [ref=e92]
+                  - generic [ref=e93]:
+                    - heading "Fitness Trackers" [level=4] [ref=e94]
+                    - paragraph [ref=e95]: Achieve your fitness goals
+                    - paragraph [ref=e96]: "Slug: fitness-trackers"
+                  - generic [ref=e97]:
+                    - button "Active" [ref=e98] [cursor=pointer]:
+                      - img [ref=e99] [cursor=pointer]
+                    - button "Edit" [ref=e102] [cursor=pointer]:
+                      - img [ref=e103] [cursor=pointer]
+                    - button "Delete" [ref=e105] [cursor=pointer]:
+                      - img [ref=e106] [cursor=pointer]
+                - generic [ref=e109]:
+                  - button [ref=e110]:
+                    - img [ref=e111]
+                  - img "VR Headsets" [ref=e114]
+                  - generic [ref=e115]:
+                    - heading "VR Headsets" [level=4] [ref=e116]
+                    - paragraph [ref=e117]: Immerse yourself in virtual worlds
+                    - paragraph [ref=e118]: "Slug: vr-headsets"
+                  - generic [ref=e119]:
+                    - button "Active" [ref=e120] [cursor=pointer]:
+                      - img [ref=e121] [cursor=pointer]
+                    - button "Edit" [ref=e124] [cursor=pointer]:
+                      - img [ref=e125] [cursor=pointer]
+                    - button "Delete" [ref=e127] [cursor=pointer]:
+                      - img [ref=e128] [cursor=pointer]
+                - generic [ref=e131]:
+                  - button [ref=e132]:
+                    - img [ref=e133]
+                  - img "Smart Rings" [ref=e136]
+                  - generic [ref=e137]:
+                    - heading "Smart Rings" [level=4] [ref=e138]
+                    - paragraph [ref=e139]: Wellness insights at your fingertips
+                    - paragraph [ref=e140]: "Slug: smart-rings"
+                  - generic [ref=e141]:
+                    - button "Active" [ref=e142] [cursor=pointer]:
+                      - img [ref=e143] [cursor=pointer]
+                    - button "Edit" [ref=e146] [cursor=pointer]:
+                      - img [ref=e147] [cursor=pointer]
+                    - button "Delete" [ref=e149] [cursor=pointer]:
+                      - img [ref=e150] [cursor=pointer]
+                - generic [ref=e153]:
+                  - button [ref=e154]:
+                    - img [ref=e155]
+                  - img "Health Monitors" [ref=e158]
+                  - generic [ref=e159]:
+                    - heading "Health Monitors" [level=4] [ref=e160]
+                    - paragraph [ref=e161]: Track your vital signs
+                    - paragraph [ref=e162]: "Slug: health-monitors"
+                  - generic [ref=e163]:
+                    - button "Active" [ref=e164] [cursor=pointer]:
+                      - img [ref=e165] [cursor=pointer]
+                    - button "Edit" [ref=e168] [cursor=pointer]:
+                      - img [ref=e169] [cursor=pointer]
+                    - button "Delete" [ref=e171] [cursor=pointer]:
+                      - img [ref=e172] [cursor=pointer]
+                - status [ref=e174]
+            - paragraph [ref=e176]:
+              - strong [ref=e177]: "Tip:"
+              - text: Visit your
+              - link "homepage" [ref=e178] [cursor=pointer]:
+                - /url: /nectarheat
+              - text: to see the category cards in action with the sticky scrolling effect.
+  - button "Chat with us" [ref=e180] [cursor=pointer]:
+    - img [ref=e181] [cursor=pointer]
+    - text: Chat with us
+  - status [ref=e183]:
+    - generic [ref=e184]:
+      - img [ref=e186]
+      - generic [ref=e188]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e189] [cursor=pointer]:
+          - img [ref=e190] [cursor=pointer]
+  - alert [ref=e193]
+```

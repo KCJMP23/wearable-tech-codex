@@ -6,12 +6,18 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
+    "@affiliate-factory/blockchain": "workspace:*",
     "@anthropic-ai/sdk": "^0.21.0",
+    "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.1",
     "@upstash/redis": "^1.31.3",
+    "@wagmi/core": "^1.4.6",
     "axios": "^1.6.7",
+    "ethers": "^6.8.0",
     "openai": "^4.28.4",
     "resend": "^3.3.0",
+    "viem": "^1.15.1",
+    "wagmi": "^1.4.6",
     "zod": "^3.22.4"
   }
 }

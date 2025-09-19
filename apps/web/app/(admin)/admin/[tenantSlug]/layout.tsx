@@ -4,7 +4,7 @@ import AdminLayoutClient from './components/AdminLayoutClient';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function AdminLayout({ children, params }: AdminLayoutProps) {

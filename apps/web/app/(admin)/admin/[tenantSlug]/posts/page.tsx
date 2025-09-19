@@ -13,11 +13,12 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface PostsAdminPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function PostsAdminPage({ params }: PostsAdminPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
   const posts = await listPosts(tenant.id);
 

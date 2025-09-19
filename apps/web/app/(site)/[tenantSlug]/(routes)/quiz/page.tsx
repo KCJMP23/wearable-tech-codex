@@ -1,15 +1,15 @@
 import { notFound } from 'next/navigation';
-import { getTenantBySlug } from '../../../../lib/tenant';
-import { getActiveQuiz } from '../../../../lib/content';
-import { QuizDrawer } from '@affiliate-factory/ui';
-import { submitQuizAnswers } from '../actions';
+import { getTenantBySlug } from '@/lib/tenant';
+import { getActiveQuiz } from '@/lib/content';
+import { QuizWrapper } from '@/components/QuizWrapper';
 
 interface QuizPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function QuizPage({ params }: QuizPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
   const quiz = await getActiveQuiz(tenant.id);
   if (!quiz) {
@@ -24,7 +24,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
     <div className="mx-auto max-w-4xl space-y-6 px-6 py-16">
       <h1 className="text-4xl font-semibold text-neutral-900">{quiz.title}</h1>
       <p className="text-neutral-600">Answer a few quick questions to unlock curated recommendations.</p>
-      <QuizDrawer quiz={quiz} onSubmit={(answers) => submitQuizAnswers(params.tenantSlug, quiz.id, answers)} />
+      <QuizWrapper quiz={quiz} tenantSlug={tenantSlug} />
     </div>
   );
 }

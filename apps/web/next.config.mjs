@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true,
-    optimizeCss: true
-  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.amazonaws.com' },
@@ -19,8 +15,7 @@ const nextConfig = {
   transpilePackages: ['@affiliate-factory/ui', '@affiliate-factory/sdk', '@affiliate-factory/content'],
   compress: true,
   poweredByHeader: false,
-  reactStrictMode: true,
-  swcMinify: true
+  reactStrictMode: true
 };
 
 export default nextConfig;

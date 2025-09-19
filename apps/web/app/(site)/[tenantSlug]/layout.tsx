@@ -5,7 +5,7 @@ import { ThemeBridge } from '../../components/ThemeBridge';
 
 interface TenantLayoutProps {
   children: ReactNode;
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export async function generateMetadata({ params }: TenantLayoutProps): Promise<Metadata> {
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: TenantLayoutProps): Promise<M
   }
   return {
     title: `${tenant.name} — Affiliate Factory`,
-    description: tenant.theme?.tagline ?? 'Wearable tech insights and affiliate picks.'
+    description: tenant.theme?.tagline ?? `${(tenant as any).niche || 'Product'} insights and affiliate recommendations.`
   };
 }
 

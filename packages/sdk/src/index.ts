@@ -1,4 +1,5 @@
 export * from './types';
+export * from './database.types';
 export * from './env';
 export * from './supabase';
 export * from './amazon';
@@ -8,3 +9,6 @@ export * from './generation';
 export * from './newsletter';
 export * from './insights';
 export * from './queue';
+export * from './services/mcp-server';
+// Temporarily disabled until blockchain package is built
+// export * from './blockchain';

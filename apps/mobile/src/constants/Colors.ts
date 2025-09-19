@@ -1,0 +1,51 @@
+const tintColorLight = '#007AFF';
+const tintColorDark = '#66B3FF';
+
+export const Colors = {
+  light: {
+    text: '#1F2937',
+    background: '#FFFFFF',
+    surface: '#F9FAFB',
+    surfaceSecondary: '#F3F4F6',
+    tint: tintColorLight,
+    tabIconDefault: '#9CA3AF',
+    tabIconSelected: tintColorLight,
+    border: '#E5E7EB',
+    borderLight: '#F3F4F6',
+    primary: '#007AFF',
+    secondary: '#5856D6',
+    success: '#34C759',
+    warning: '#FF9500',
+    error: '#FF3B30',
+    info: '#5AC8FA',
+    card: '#FFFFFF',
+    notification: '#FF3B30',
+    placeholder: '#9CA3AF',
+    disabled: '#D1D5DB',
+    shadow: 'rgba(0, 0, 0, 0.1)',
+  },
+  dark: {
+    text: '#F9FAFB',
+    background: '#111827',
+    surface: '#1F2937',
+    surfaceSecondary: '#374151',
+    tint: tintColorDark,
+    tabIconDefault: '#6B7280',
+    tabIconSelected: tintColorDark,
+    border: '#374151',
+    borderLight: '#4B5563',
+    primary: '#66B3FF',
+    secondary: '#BF5AF2',
+    success: '#32D74B',
+    warning: '#FF9F0A',
+    error: '#FF453A',
+    info: '#64D2FF',
+    card: '#1F2937',
+    notification: '#FF453A',
+    placeholder: '#6B7280',
+    disabled: '#4B5563',
+    shadow: 'rgba(0, 0, 0, 0.3)',
+  },
+};
+
+export type ColorScheme = keyof typeof Colors;

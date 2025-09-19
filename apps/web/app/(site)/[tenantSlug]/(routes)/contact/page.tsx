@@ -1,15 +1,16 @@
 import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getTenantBySlug } from '../../../../lib/tenant';
-import { getKbEntry } from '../../../../lib/content';
+import { getTenantBySlug } from '@/lib/tenant';
+import { getKbEntry } from '@/lib/content';
 
 interface ContactPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function ContactPage({ params }: ContactPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
   const contact = await getKbEntry(tenant.id, 'faq', 'Contact');
   return (

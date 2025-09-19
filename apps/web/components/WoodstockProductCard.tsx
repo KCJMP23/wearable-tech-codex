@@ -98,15 +98,20 @@ export function WoodstockProductCard({ product, tenantSlug = 'nectarheat' }: Woo
         {/* Quick Add to Cart Button */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
           {product.affiliateUrl ? (
-            <a
-              href={product.affiliateUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <ShoppingBagIcon className="h-4 w-4" />
-              Buy Now
-            </a>
+            <div className="text-center">
+              <a
+                href={product.affiliateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <ShoppingBagIcon className="h-4 w-4" />
+                View Details
+              </a>
+              <div className="text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded mt-1">
+                #ad
+              </div>
+            </div>
           ) : (
             <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
               <ShoppingBagIcon className="h-4 w-4" />

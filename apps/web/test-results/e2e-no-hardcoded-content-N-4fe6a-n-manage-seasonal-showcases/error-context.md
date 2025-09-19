@@ -1,0 +1,131 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - link "N Nectar & Heat" [ref=e6] [cursor=pointer]:
+        - /url: /nectarheat
+        - generic [ref=e8] [cursor=pointer]: "N"
+        - generic [ref=e9] [cursor=pointer]: Nectar & Heat
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e12] [cursor=pointer]:
+            - /url: /admin/nectarheat/dashboard
+            - img [ref=e13] [cursor=pointer]
+            - text: Dashboard
+          - link "Homepage" [ref=e15] [cursor=pointer]:
+            - /url: /admin/nectarheat/homepage
+            - img [ref=e16] [cursor=pointer]
+            - text: Homepage
+          - link "Products" [ref=e18] [cursor=pointer]:
+            - /url: /admin/nectarheat/products
+            - img [ref=e19] [cursor=pointer]
+            - text: Products
+          - link "Posts" [ref=e21] [cursor=pointer]:
+            - /url: /admin/nectarheat/posts
+            - img [ref=e22] [cursor=pointer]
+            - text: Posts
+          - link "Calendar" [ref=e24] [cursor=pointer]:
+            - /url: /admin/nectarheat/calendar
+            - img [ref=e25] [cursor=pointer]
+            - text: Calendar
+          - link "Agents" [ref=e27] [cursor=pointer]:
+            - /url: /admin/nectarheat/agents
+            - img [ref=e28] [cursor=pointer]
+            - text: Agents
+          - link "Webhooks" [ref=e30] [cursor=pointer]:
+            - /url: /admin/nectarheat/webhooks
+            - img [ref=e31] [cursor=pointer]
+            - text: Webhooks
+          - link "Analytics" [ref=e33] [cursor=pointer]:
+            - /url: /admin/nectarheat/analytics
+            - img [ref=e34] [cursor=pointer]
+            - text: Analytics
+          - link "Settings" [ref=e36] [cursor=pointer]:
+            - /url: /admin/nectarheat/settings
+            - img [ref=e37] [cursor=pointer]
+            - text: Settings
+        - link "View storefront →" [ref=e40] [cursor=pointer]:
+          - /url: /nectarheat
+    - generic [ref=e41]:
+      - banner [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e45]:
+            - heading "Nectar & Heat" [level=1] [ref=e46]
+            - paragraph [ref=e47]: Affiliate management dashboard
+          - generic [ref=e49]:
+            - text: Signed in as
+            - generic [ref=e50]: Admin
+      - main [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]:
+            - heading "Seasonal Showcases" [level=3] [ref=e54]
+            - paragraph [ref=e55]: Manage seasonal promotional content that appears on your homepage. These are automatically updated by the Seasonal Agent based on current trends and seasons.
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - generic [ref=e59]:
+                  - heading "Seasonal Showcases" [level=4] [ref=e60]
+                  - paragraph [ref=e61]: AI agents update these automatically based on season and trends
+                - button "Add Showcase" [ref=e62] [cursor=pointer]:
+                  - img [ref=e63] [cursor=pointer]
+                  - text: Add Showcase
+              - generic [ref=e65]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]:
+                    - generic [ref=e69]:
+                      - generic [ref=e70]: 🍂
+                      - generic [ref=e71]: FALL 2025
+                      - generic [ref=e72]: fall
+                      - generic [ref=e73]: Active
+                    - heading "Fall Fitness Revolution" [level=5] [ref=e74]
+                    - paragraph [ref=e75]: Perfect Weather for Outdoor Training
+                    - paragraph [ref=e76]: Our AI discovered the top-rated GPS watches and fitness trackers for fall hiking, running, and outdoor adventures
+                    - paragraph [ref=e77]: "Valid: 8/31/2025 - 11/29/2025"
+                  - generic [ref=e78]:
+                    - button "Active" [ref=e79] [cursor=pointer]:
+                      - img [ref=e80] [cursor=pointer]
+                    - button "Edit" [ref=e83] [cursor=pointer]:
+                      - img [ref=e84] [cursor=pointer]
+                    - button "Delete" [ref=e86] [cursor=pointer]:
+                      - img [ref=e87] [cursor=pointer]
+                - generic [ref=e90]:
+                  - generic [ref=e91]:
+                    - generic [ref=e92]:
+                      - generic [ref=e93]: 🎓
+                      - generic [ref=e94]: STUDENT SAVINGS
+                      - generic [ref=e95]: fall
+                      - generic [ref=e96]: Active
+                    - heading "Back to School Tech" [level=5] [ref=e97]
+                    - paragraph [ref=e98]: Smart Devices for Students
+                    - paragraph [ref=e99]: AI-selected smartwatches and fitness bands perfect for campus life, study tracking, and staying healthy
+                    - paragraph [ref=e100]: "Valid: 8/14/2025 - 10/30/2025"
+                  - generic [ref=e101]:
+                    - button "Active" [ref=e102] [cursor=pointer]:
+                      - img [ref=e103] [cursor=pointer]
+                    - button "Edit" [ref=e106] [cursor=pointer]:
+                      - img [ref=e107] [cursor=pointer]
+                    - button "Delete" [ref=e109] [cursor=pointer]:
+                      - img [ref=e110] [cursor=pointer]
+            - generic [ref=e112]:
+              - paragraph [ref=e113]:
+                - strong [ref=e114]: "Note:"
+                - text: "The Seasonal Agent automatically updates these showcases based on:"
+              - list [ref=e115]:
+                - listitem [ref=e116]: Current season and weather patterns
+                - listitem [ref=e117]: Shopping trends and popular products
+                - listitem [ref=e118]: Upcoming holidays and events
+                - listitem [ref=e119]: Historical performance data
+  - button "Chat with us" [ref=e121] [cursor=pointer]:
+    - img [ref=e122] [cursor=pointer]
+    - text: Chat with us
+  - status [ref=e124]:
+    - generic [ref=e125]:
+      - img [ref=e127]
+      - generic [ref=e129]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e130] [cursor=pointer]:
+          - img [ref=e131] [cursor=pointer]
+  - alert [ref=e134]
+```

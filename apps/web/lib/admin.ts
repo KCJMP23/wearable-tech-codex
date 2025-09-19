@@ -120,3 +120,35 @@ export async function listPosts(tenantId: string): Promise<Post[]> {
   if (error) throw error;
   return (data ?? []).map(mapPost);
 }
+
+export async function getAgentConfigs(tenantId: string): Promise<Record<string, any>> {
+  const client = createServiceClient();
+  const { data, error } = await client
+    .from('agent_configs')
+    .select('*')
+    .eq('tenant_id', tenantId);
+  
+  if (error) {
+    console.log('No agent configs table yet, using defaults');
+    return {};
+  }
+  
+  // Transform array to object keyed by agent name
+  const configs: Record<string, any> = {};
+  (data ?? []).forEach(row => {
+    configs[row.agent_name] = {
+      enabled: row.enabled,
+      automationLevel: row.automation_level,
+      schedule: {
+        type: row.schedule_type,
+        value: row.schedule_value
+      },
+      priority: row.priority,
+      maxRetries: row.max_retries,
+      timeout: row.timeout,
+      settings: row.settings || {}
+    };
+  });
+  
+  return configs;
+}

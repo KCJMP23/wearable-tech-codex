@@ -11,7 +11,7 @@ import {
   BarChart3
 } from 'lucide-react';
 
-export default async function AdminDashboard({ params }: { params: { tenantSlug: string } }) {
+export default async function AdminDashboard({ params }: { params: Promise<{ tenantSlug: string }> }) {
   const { tenantSlug } = await params;
   const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
@@ -101,8 +101,8 @@ export default async function AdminDashboard({ params }: { params: { tenantSlug:
             <div className="flow-root">
               <ul className="-mb-8">
                 {[
-                  { id: 1, content: 'New product "Smart Watch Pro" added', time: '2 hours ago' },
-                  { id: 2, content: 'Blog post "Top 10 Fitness Trackers" published', time: '4 hours ago' },
+                  { id: 1, content: 'New product "Premium Product Pro" added', time: '2 hours ago' },
+                  { id: 2, content: 'Blog post "Top Product Recommendations" published', time: '4 hours ago' },
                   { id: 3, content: 'Order #1234 processed successfully', time: '6 hours ago' },
                   { id: 4, content: 'Newsletter sent to 2,345 subscribers', time: '1 day ago' }
                 ].map((event, eventIdx) => (

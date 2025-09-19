@@ -1,15 +1,16 @@
 import { notFound } from 'next/navigation';
-import { getCalendarItems } from '../../../../lib/admin';
-import { getTenantBySlug } from '../../../../lib/tenant';
+import { getCalendarItems } from '@/lib/admin';
+import { getTenantBySlug } from '@/lib/tenant';
 import { rescheduleCalendarItem } from './actions';
 import { CalendarBoard } from '@affiliate-factory/ui';
 
 interface CalendarAdminPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function CalendarAdminPage({ params }: CalendarAdminPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
   const calendar = await getCalendarItems(tenant.id);
   return (
@@ -20,7 +21,7 @@ export default async function CalendarAdminPage({ params }: CalendarAdminPagePro
       </header>
       <CalendarBoard items={calendar} />
       <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-6">
-        <form action={reschedule.bind(null, params.tenantSlug)} className="flex flex-wrap items-end gap-3 text-sm">
+        <form action={reschedule.bind(null, tenantSlug)} className="flex flex-wrap items-end gap-3 text-sm">
           <div className="flex flex-col">
             <label htmlFor="item" className="text-neutral-400">
               Calendar item ID

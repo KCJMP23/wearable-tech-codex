@@ -1,0 +1,62 @@
+[
+  {
+    "id": "apple-watch-series-10-46mm",
+    "name": "Apple Watch Series 10 GPS 46mm",
+    "asin": "B0DGHQ2QH6",
+    "price": 429,
+    "currency": "USD",
+    "category": "smartwatch",
+    "brand": "Apple",
+    "features": [
+      "ECG App",
+      "Always-On Retina Display",
+      "Water Resistant to 50m",
+      "Built-in GPS",
+      "Health and Fitness tracking",
+      "Sleep tracking",
+      "Blood oxygen monitoring"
+    ],
+    "amazonUrl": "https://www.amazon.com/dp/B0DGHQ2QH6",
+    "description": "The most advanced Apple Watch yet with larger display and faster charging"
+  },
+  {
+    "id": "fitbit-charge-6",
+    "name": "Fitbit Charge 6 Fitness Tracker",
+    "asin": "B0CC644KMJ",
+    "price": 159,
+    "currency": "USD",
+    "category": "fitness-tracker",
+    "brand": "Fitbit",
+    "features": [
+      "Built-in GPS",
+      "6+ day battery life",
+      "40+ exercise modes",
+      "Heart rate tracking",
+      "Sleep score analysis",
+      "Google apps integration",
+      "Premium membership included"
+    ],
+    "amazonUrl": "https://www.amazon.com/dp/B0CC644KMJ",
+    "description": "Advanced fitness tracker with Google apps and heart rate on exercise equipment"
+  },
+  {
+    "id": "garmin-vivoactive-5",
+    "name": "Garmin Vivoactive 5 GPS Smartwatch",
+    "asin": "B0CCQQ7Q4T",
+    "price": 299,
+    "currency": "USD",
+    "category": "smartwatch",
+    "brand": "Garmin",
+    "features": [
+      "Built-in GPS",
+      "11-day battery life",
+      "30+ sports apps",
+      "Health snapshot feature",
+      "Sleep coaching",
+      "Body battery energy monitoring",
+      "Smart notifications"
+    ],
+    "amazonUrl": "https://www.amazon.com/dp/B0CCQQ7Q4T",
+    "description": "GPS smartwatch with 11-day battery life and comprehensive health monitoring"
+  }
+]

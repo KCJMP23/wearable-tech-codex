@@ -9,7 +9,8 @@ interface NavigationProps {
   tenantName: string;
 }
 
-const navigationItems = [
+// TODO: This should be loaded dynamically from database based on tenant's niche and categories
+const getNavigationItems = () => [
   {
     name: 'Shop',
     href: '/products',
@@ -23,27 +24,27 @@ const navigationItems = [
         image: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=200&h=150&fit=crop'
       },
       { 
-        name: 'Smartwatches', 
-        href: '/products?category=smartwatches',
-        description: 'Feature-rich wearables',
+        name: 'Best Sellers', 
+        href: '/products?category=bestsellers',
+        description: 'Most popular products',
         image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=150&fit=crop'
       },
       { 
-        name: 'Fitness Trackers', 
-        href: '/products?category=fitness-trackers',
-        description: 'Track your workouts',
+        name: 'New Arrivals', 
+        href: '/products?category=new-arrivals',
+        description: 'Latest additions',
         image: 'https://images.unsplash.com/photo-1576243345690-4e4b79b63288?w=200&h=150&fit=crop'
       },
       { 
-        name: 'Health Monitors', 
-        href: '/products?category=health-monitors',
-        description: 'Monitor vital signs',
+        name: 'Premium', 
+        href: '/products?category=premium',
+        description: 'High-end products',
         image: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=200&h=150&fit=crop'
       },
       { 
-        name: 'Smart Rings', 
-        href: '/products?category=smart-rings',
-        description: 'Discreet health tracking',
+        name: 'Budget-Friendly', 
+        href: '/products?category=budget',
+        description: 'Great value options',
         image: 'https://images.unsplash.com/photo-1608481337062-4093bf3ed404?w=200&h=150&fit=crop'
       },
       { 
@@ -129,7 +130,7 @@ export function WoodstockNavigation({ tenantSlug, tenantName }: NavigationProps)
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              {navigationItems.map((item) => (
+              {getNavigationItems().map((item) => (
                 <div
                   key={item.name}
                   className="relative"
@@ -333,7 +334,7 @@ export function WoodstockNavigation({ tenantSlug, tenantName }: NavigationProps)
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {navigationItems.map((item) => (
+            {getNavigationItems().map((item) => (
               <div key={item.name}>
                 <Link
                   href={`/${tenantSlug}${item.href}`}

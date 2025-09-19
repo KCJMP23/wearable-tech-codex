@@ -7,8 +7,8 @@ import { ProductCollectionLayout } from '@/components/ProductCollectionLayout';
 import { WoodstockFooter } from '@/components/WoodstockFooter';
 
 interface ProductsPageProps {
-  params: { tenantSlug: string };
-  searchParams: { category?: string; sort?: string; filter?: string };
+  params: Promise<{ tenantSlug: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; filter?: string }>;
 }
 
 export default async function ProductsPage({ params, searchParams }: ProductsPageProps) {

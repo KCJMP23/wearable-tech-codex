@@ -128,4 +128,791 @@ export class NewsletterAgent extends BaseAgent {
         default:
           throw new Error(`Unknown action: ${input.action}`);
       }
-    }, `execute ${task.input?.action || 'unknown'}`);\n  }\n\n  private async generateWeeklyRoundup(tenantId: string, deps: AgentDependencies): Promise<any> {\n    // Get this week's content\n    const weekStart = new Date();\n    weekStart.setDate(weekStart.getDate() - weekStart.getDay());\n    const weekEnd = new Date(weekStart);\n    weekEnd.setDate(weekEnd.getDate() + 6);\n\n    // Fetch week's published content\n    const { data: weeklyPosts } = await deps.supabase\n      .from('posts')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .eq('status', 'published')\n      .gte('published_at', weekStart.toISOString())\n      .lte('published_at', weekEnd.toISOString())\n      .order('published_at', { ascending: false });\n\n    // Get trending products\n    const { data: trendingProducts } = await deps.supabase\n      .from('products')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .order('created_at', { ascending: false })\n      .limit(5);\n\n    // Generate newsletter content\n    const newsletterContent = await this.generateRoundupContent(\n      weeklyPosts || [], \n      trendingProducts || [], \n      deps\n    );\n\n    // Create campaign\n    const campaign = await this.createCampaign(\n      tenantId,\n      'roundup',\n      newsletterContent,\n      deps\n    );\n\n    return {\n      action: 'weekly_roundup_generated',\n      campaignId: campaign.id,\n      subject: campaign.subject,\n      contentSections: Object.keys(newsletterContent.sections),\n      postsIncluded: weeklyPosts?.length || 0,\n      productsHighlighted: trendingProducts?.length || 0\n    };\n  }\n\n  private async createProductSpotlight(tenantId: string, productIds: string[], deps: AgentDependencies): Promise<any> {\n    if (!productIds || productIds.length === 0) {\n      throw new Error('Product IDs are required for spotlight campaign');\n    }\n\n    // Get featured products\n    const { data: products } = await deps.supabase\n      .from('products')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .in('id', productIds);\n\n    if (!products || products.length === 0) {\n      throw new Error('No products found for spotlight');\n    }\n\n    // Get related reviews\n    const { data: reviews } = await deps.supabase\n      .from('posts')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .eq('type', 'review')\n      .eq('status', 'published')\n      .limit(3);\n\n    // Generate spotlight content\n    const spotlightContent = await this.generateSpotlightContent(\n      products[0], // Primary product\n      products.slice(1), // Related products\n      reviews || [],\n      deps\n    );\n\n    // Create campaign\n    const campaign = await this.createCampaign(\n      tenantId,\n      'spotlight',\n      spotlightContent,\n      deps\n    );\n\n    return {\n      action: 'product_spotlight_created',\n      campaignId: campaign.id,\n      featuredProduct: products[0].title,\n      relatedProducts: products.slice(1).map(p => p.title),\n      subject: campaign.subject\n    };\n  }\n\n  private async sendCampaign(\n    tenantId: string,\n    segmentId?: string,\n    templateType?: string,\n    customContent?: any,\n    deps?: AgentDependencies\n  ): Promise<any> {\n    // Get campaign to send\n    let query = deps!.supabase\n      .from('newsletter_campaigns')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .eq('status', 'draft');\n\n    if (templateType) {\n      query = query.eq('template_type', templateType);\n    }\n\n    const { data: campaigns } = await query.limit(1);\n    \n    if (!campaigns || campaigns.length === 0) {\n      throw new Error('No draft campaigns found to send');\n    }\n\n    const campaign = campaigns[0];\n\n    // Get subscriber segment\n    const subscribers = await this.getSubscribers(tenantId, segmentId, deps!);\n    \n    if (subscribers.length === 0) {\n      throw new Error('No subscribers found for campaign');\n    }\n\n    // Send campaign (mock implementation)\n    const sendResult = await this.dispatchCampaign(campaign, subscribers, deps!);\n\n    // Update campaign status\n    await deps!.supabase\n      .from('newsletter_campaigns')\n      .update({ \n        status: 'sent',\n        sent_at: new Date().toISOString(),\n        recipient_count: subscribers.length\n      })\n      .eq('id', campaign.id);\n\n    return {\n      action: 'campaign_sent',\n      campaignId: campaign.id,\n      subject: campaign.subject,\n      recipientCount: subscribers.length,\n      estimatedDelivery: sendResult.estimatedDelivery\n    };\n  }\n\n  private async manageSegments(tenantId: string, deps: AgentDependencies): Promise<any> {\n    // Create default segments if they don't exist\n    const defaultSegments = [\n      {\n        name: 'All Subscribers',\n        rules: { active: true },\n        description: 'All active newsletter subscribers'\n      },\n      {\n        name: 'Fitness Enthusiasts',\n        rules: { \n          interests: ['fitness', 'health', 'running', 'cycling'],\n          device_preferences: ['fitness_tracker', 'smartwatch']\n        },\n        description: 'Users interested in fitness tracking devices'\n      },\n      {\n        name: 'Tech Early Adopters',\n        rules: {\n          engagement_level: 'high',\n          price_sensitivity: 'low',\n          feature_interests: ['latest_tech', 'premium_features']\n        },\n        description: 'Users who prefer cutting-edge technology'\n      },\n      {\n        name: 'Budget Conscious',\n        rules: {\n          price_range: 'budget',\n          deal_engagement: 'high'\n        },\n        description: 'Users looking for affordable options and deals'\n      },\n      {\n        name: 'Health Monitors',\n        rules: {\n          health_conditions: ['diabetes', 'heart_conditions'],\n          device_needs: ['health_monitoring', 'medical_features']\n        },\n        description: 'Users needing health monitoring capabilities'\n      }\n    ];\n\n    const createdSegments = [];\n    \n    for (const segment of defaultSegments) {\n      // Check if segment exists\n      const { data: existing } = await deps.supabase\n        .from('subscriber_segments')\n        .select('id')\n        .eq('tenant_id', tenantId)\n        .eq('name', segment.name)\n        .single();\n\n      if (!existing) {\n        const { data: newSegment } = await deps.supabase\n          .from('subscriber_segments')\n          .insert({\n            tenant_id: tenantId,\n            name: segment.name,\n            rules: segment.rules,\n            description: segment.description\n          })\n          .select()\n          .single();\n        \n        if (newSegment) {\n          createdSegments.push(newSegment);\n        }\n      }\n    }\n\n    // Get all segments for analysis\n    const { data: allSegments } = await deps.supabase\n      .from('subscriber_segments')\n      .select('*')\n      .eq('tenant_id', tenantId);\n\n    // Calculate segment sizes (mock)\n    const segmentSizes = await this.calculateSegmentSizes(tenantId, allSegments || [], deps);\n\n    return {\n      action: 'segments_managed',\n      segmentsCreated: createdSegments.length,\n      totalSegments: allSegments?.length || 0,\n      segmentSizes\n    };\n  }\n\n  private async analyzePerformance(tenantId: string, deps: AgentDependencies): Promise<any> {\n    // Get recent campaigns\n    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);\n    \n    const { data: campaigns } = await deps.supabase\n      .from('newsletter_campaigns')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .eq('status', 'sent')\n      .gte('sent_at', thirtyDaysAgo.toISOString())\n      .order('sent_at', { ascending: false });\n\n    if (!campaigns || campaigns.length === 0) {\n      return { action: 'no_campaigns_to_analyze' };\n    }\n\n    // Calculate metrics (mock implementation)\n    const metrics = this.calculateCampaignMetrics(campaigns);\n    const trends = this.analyzeTrends(campaigns);\n    const recommendations = this.generatePerformanceRecommendations(metrics, trends);\n\n    // Store performance insights\n    await deps.supabase\n      .from('insights')\n      .insert({\n        tenant_id: tenantId,\n        kpi: 'newsletter_performance',\n        value: metrics.averageOpenRate,\n        window: 'monthly',\n        meta: {\n          metrics,\n          trends,\n          recommendations\n        },\n        computed_at: new Date().toISOString()\n      });\n\n    return {\n      action: 'performance_analyzed',\n      campaignsAnalyzed: campaigns.length,\n      averageOpenRate: `${metrics.averageOpenRate}%`,\n      averageClickRate: `${metrics.averageClickRate}%`,\n      bestPerformingTemplate: metrics.bestTemplate,\n      trends,\n      recommendations\n    };\n  }\n\n  private async createSeasonalCampaign(tenantId: string, deps: AgentDependencies): Promise<any> {\n    const currentSeason = this.getCurrentSeason();\n    const seasonalTopics = this.getSeasonalTopics(currentSeason);\n    \n    // Get seasonal products\n    const { data: seasonalProducts } = await deps.supabase\n      .from('products')\n      .select('*')\n      .eq('tenant_id', tenantId)\n      .limit(5);\n\n    // Generate seasonal content\n    const seasonalContent = await this.generateSeasonalContent(\n      currentSeason,\n      seasonalTopics,\n      seasonalProducts || [],\n      deps\n    );\n\n    // Create campaign\n    const campaign = await this.createCampaign(\n      tenantId,\n      'seasonal',\n      seasonalContent,\n      deps\n    );\n\n    return {\n      action: 'seasonal_campaign_created',\n      campaignId: campaign.id,\n      season: currentSeason,\n      topics: seasonalTopics,\n      productsIncluded: seasonalProducts?.length || 0\n    };\n  }\n\n  // Helper methods\n  private async generateRoundupContent(\n    posts: any[],\n    products: any[],\n    deps: AgentDependencies\n  ): Promise<any> {\n    const weekStart = new Date();\n    weekStart.setDate(weekStart.getDate() - weekStart.getDay());\n    \n    return {\n      header: {\n        title: `Weekly Wearable Tech Roundup`,\n        subtitle: `Week of ${weekStart.toLocaleDateString()}`,\n        image: 'https://example.com/newsletter-header.jpg'\n      },\n      sections: {\n        intro: {\n          content: 'This week brought exciting developments in wearable technology. Here are the highlights you shouldn\\'t miss.'\n        },\n        featured_reviews: {\n          posts: posts.filter(p => p.type === 'review').slice(0, 3).map(post => ({\n            title: post.title,\n            excerpt: post.excerpt,\n            url: `https://example.com/blog/${post.slug}`,\n            image: post.images?.[0]?.url\n          }))\n        },\n        trending_products: {\n          products: products.slice(0, 4).map(product => ({\n            title: product.title,\n            price: product.price_snapshot,\n            image: product.images?.[0]?.url,\n            affiliate_url: product.affiliate_url,\n            rating: product.rating\n          }))\n        },\n        tech_news: {\n          items: [\n            'New fitness tracking algorithms improve accuracy by 15%',\n            'Major smartwatch update adds sleep coaching features',\n            'Wearable market sees 23% growth in health monitoring devices'\n          ]\n        },\n        deals: {\n          items: products.filter(p => p.price_snapshot).slice(0, 3).map(product => ({\n            title: product.title,\n            original_price: product.price_snapshot,\n            sale_price: this.calculateSalePrice(product.price_snapshot),\n            savings: this.calculateSavings(product.price_snapshot),\n            affiliate_url: product.affiliate_url\n          }))\n        }\n      }\n    };\n  }\n\n  private async generateSpotlightContent(\n    primaryProduct: any,\n    relatedProducts: any[],\n    reviews: any[],\n    deps: AgentDependencies\n  ): Promise<any> {\n    return {\n      header: {\n        title: `Product Spotlight: ${primaryProduct.title}`,\n        subtitle: 'In-depth analysis and expert insights',\n        image: primaryProduct.images?.[0]?.url\n      },\n      sections: {\n        hero_product: {\n          product: {\n            title: primaryProduct.title,\n            brand: primaryProduct.brand,\n            price: primaryProduct.price_snapshot,\n            rating: primaryProduct.rating,\n            image: primaryProduct.images?.[0]?.url,\n            affiliate_url: primaryProduct.affiliate_url\n          }\n        },\n        key_features: {\n          features: primaryProduct.features?.slice(0, 5) || [],\n          health_metrics: primaryProduct.health_metrics || [],\n          battery_life: primaryProduct.battery_life_hours,\n          water_resistance: primaryProduct.water_resistance\n        },\n        expert_review: {\n          review: reviews.find(r => r.title.includes(primaryProduct.title.split(' ')[0])) || {\n            title: `${primaryProduct.title} Review`,\n            excerpt: `Our comprehensive review of the ${primaryProduct.title}`,\n            url: `https://example.com/reviews/${primaryProduct.asin}`\n          }\n        },\n        comparisons: {\n          products: relatedProducts.slice(0, 3).map(product => ({\n            title: product.title,\n            price: product.price_snapshot,\n            rating: product.rating,\n            key_difference: this.identifyKeyDifference(primaryProduct, product)\n          }))\n        }\n      }\n    };\n  }\n\n  private async generateSeasonalContent(\n    season: string,\n    topics: string[],\n    products: any[],\n    deps: AgentDependencies\n  ): Promise<any> {\n    return {\n      header: {\n        title: `${season} Wearable Tech Guide`,\n        subtitle: `Best picks for ${season.toLowerCase()} activities`,\n        image: `https://example.com/seasonal/${season.toLowerCase()}.jpg`\n      },\n      sections: {\n        seasonal_intro: {\n          content: `As ${season.toLowerCase()} approaches, it's time to prepare your wearable tech for the season ahead. Here are our top recommendations.`\n        },\n        category_highlights: {\n          categories: this.getSeasonalCategories(season).map(category => ({\n            name: category,\n            products: products.filter(p => this.matchesSeasonalCategory(p, category)).slice(0, 2)\n          }))\n        },\n        seasonal_tips: {\n          tips: this.getSeasonalTips(season)\n        }\n      }\n    };\n  }\n\n  private async createCampaign(\n    tenantId: string,\n    templateType: string,\n    content: any,\n    deps: AgentDependencies\n  ): Promise<NewsletterCampaign> {\n    const template = this.newsletterTemplates[templateType];\n    const htmlContent = await this.generateHTMLContent(template, content, deps);\n    \n    const campaign = {\n      tenant_id: tenantId,\n      template_type: templateType,\n      subject: this.personalizeSubject(template.subject, content),\n      preheader: template.preheader,\n      html: htmlContent,\n      segment: 'all_subscribers',\n      status: 'draft',\n      scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Tomorrow\n    };\n\n    const { data: savedCampaign, error } = await deps.supabase\n      .from('newsletter_campaigns')\n      .insert(campaign)\n      .select()\n      .single();\n\n    if (error) {\n      throw new Error(`Failed to create campaign: ${error.message}`);\n    }\n\n    return savedCampaign as NewsletterCampaign;\n  }\n\n  private async generateHTMLContent(template: NewsletterTemplate, content: any, deps: AgentDependencies): Promise<string> {\n    // Mock HTML generation - in real implementation, use a template engine\n    let html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>${content.header?.title || 'Newsletter'}</title>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { text-align: center; padding: 20px 0; }\n    .section { margin: 30px 0; }\n    .product { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }\n    .cta { text-align: center; margin: 30px 0; }\n    .btn { background: #007cba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>${content.header?.title || 'Wearable Tech Newsletter'}</h1>\n      <p>${content.header?.subtitle || ''}</p>\n    </div>`;\n\n    // Add content sections based on template structure\n    for (const sectionType of template.structure) {\n      if (content.sections?.[sectionType]) {\n        html += this.renderSection(sectionType, content.sections[sectionType]);\n      }\n    }\n\n    html += `\n    <div class=\"cta\">\n      <a href=\"#\" class=\"btn\">${template.cta.primary}</a>\n    </div>\n    <div class=\"footer\">\n      <p><small>You received this email because you subscribed to our newsletter.</small></p>\n      <p><small><a href=\"#\">Unsubscribe</a> | <a href=\"#\">Update Preferences</a></small></p>\n    </div>\n  </div>\n</body>\n</html>`;\n\n    return html;\n  }\n\n  private renderSection(sectionType: string, sectionData: any): string {\n    switch (sectionType) {\n      case 'featured_reviews':\n        return `\n    <div class=\"section\">\n      <h2>Featured Reviews</h2>\n      ${(sectionData.posts || []).map((post: any) => `\n        <div class=\"product\">\n          <h3><a href=\"${post.url}\">${post.title}</a></h3>\n          <p>${post.excerpt}</p>\n        </div>\n      `).join('')}\n    </div>`;\n      \n      case 'trending_products':\n        return `\n    <div class=\"section\">\n      <h2>Trending Products</h2>\n      ${(sectionData.products || []).map((product: any) => `\n        <div class=\"product\">\n          <h3>${product.title}</h3>\n          <p>Price: ${product.price || 'N/A'} | Rating: ${product.rating || 'N/A'}</p>\n          <a href=\"${product.affiliate_url}\">View Product</a>\n        </div>\n      `).join('')}\n    </div>`;\n      \n      default:\n        return `\n    <div class=\"section\">\n      <h2>${sectionType.replace('_', ' ').replace(/\\b\\w/g, l => l.toUpperCase())}</h2>\n      <p>${sectionData.content || JSON.stringify(sectionData)}</p>\n    </div>`;\n    }\n  }\n\n  private personalizeSubject(subject: string, content: any): string {\n    const today = new Date();\n    const replacements = {\n      '[Date]': today.toLocaleDateString(),\n      '[Product Name]': content.sections?.hero_product?.product?.title || 'Featured Product',\n      '[Season]': this.getCurrentSeason(),\n      '[Use Case]': 'Fitness & Health'\n    };\n\n    let personalizedSubject = subject;\n    Object.entries(replacements).forEach(([placeholder, value]) => {\n      personalizedSubject = personalizedSubject.replace(placeholder, value);\n    });\n\n    return personalizedSubject;\n  }\n\n  private async getSubscribers(tenantId: string, segmentId?: string, deps?: AgentDependencies): Promise<any[]> {\n    // Mock subscribers - in real implementation, query actual subscriber database\n    return [\n      { id: '1', email: 'user1@example.com', preferences: { fitness: true } },\n      { id: '2', email: 'user2@example.com', preferences: { tech: true } },\n      { id: '3', email: 'user3@example.com', preferences: { budget: true } }\n    ];\n  }\n\n  private async dispatchCampaign(campaign: any, subscribers: any[], deps: AgentDependencies): Promise<any> {\n    // Mock email sending - in real implementation, integrate with email service (SendGrid, Mailgun, etc.)\n    console.log(`Sending campaign \"${campaign.subject}\" to ${subscribers.length} subscribers`);\n    \n    return {\n      sent: subscribers.length,\n      estimatedDelivery: '15 minutes',\n      trackingId: `track_${Date.now()}`\n    };\n  }\n\n  private async calculateSegmentSizes(tenantId: string, segments: any[], deps: AgentDependencies): Promise<Record<string, number>> {\n    // Mock segment size calculation\n    const sizes: Record<string, number> = {};\n    \n    for (const segment of segments) {\n      // In real implementation, count subscribers matching segment rules\n      sizes[segment.name] = Math.floor(Math.random() * 1000) + 100;\n    }\n    \n    return sizes;\n  }\n\n  private calculateCampaignMetrics(campaigns: any[]): EmailMetrics & { bestTemplate: string } {\n    // Mock metrics calculation\n    const totalSent = campaigns.reduce((sum, c) => sum + (c.recipient_count || 0), 0);\n    const avgOpenRate = 25 + Math.random() * 10; // 25-35%\n    const avgClickRate = 3 + Math.random() * 4; // 3-7%\n    \n    return {\n      sent: totalSent,\n      delivered: Math.floor(totalSent * 0.98),\n      opened: Math.floor(totalSent * (avgOpenRate / 100)),\n      clicked: Math.floor(totalSent * (avgClickRate / 100)),\n      unsubscribed: Math.floor(totalSent * 0.005),\n      bounced: Math.floor(totalSent * 0.02),\n      openRate: Math.round(avgOpenRate * 10) / 10,\n      clickRate: Math.round(avgClickRate * 10) / 10,\n      unsubscribeRate: 0.5,\n      bestTemplate: 'roundup' // Most common template\n    };\n  }\n\n  private analyzeTrends(campaigns: any[]): any {\n    return {\n      openRateTrend: 'increasing',\n      clickRateTrend: 'stable',\n      bestDayToSend: 'Friday',\n      bestTimeToSend: '10:00 AM',\n      topPerformingSubjectLines: [\n        'Weekly Roundup',\n        'Product Spotlight',\n        'Deal Alert'\n      ]\n    };\n  }\n\n  private generatePerformanceRecommendations(metrics: any, trends: any): string[] {\n    const recommendations = [];\n    \n    if (metrics.openRate < 20) {\n      recommendations.push('Improve subject lines to increase open rates');\n    }\n    \n    if (metrics.clickRate < 3) {\n      recommendations.push('Add more compelling calls-to-action');\n    }\n    \n    if (metrics.unsubscribeRate > 1) {\n      recommendations.push('Review content relevance and frequency');\n    }\n    \n    if (recommendations.length === 0) {\n      recommendations.push('Newsletter performance is strong - maintain current strategy');\n    }\n    \n    return recommendations;\n  }\n\n  // Utility methods\n  private getCurrentSeason(): string {\n    const month = new Date().getMonth();\n    if (month >= 2 && month <= 4) return 'Spring';\n    if (month >= 5 && month <= 7) return 'Summer';\n    if (month >= 8 && month <= 10) return 'Fall';\n    return 'Winter';\n  }\n\n  private getSeasonalTopics(season: string): string[] {\n    const topics = {\n      Spring: ['outdoor fitness', 'running prep', 'cycling season', 'spring cleaning'],\n      Summer: ['swimming tracking', 'vacation tech', 'heat monitoring', 'UV protection'],\n      Fall: ['back to school', 'marathon training', 'weather resistance', 'indoor workouts'],\n      Winter: ['holiday gifts', 'indoor fitness', 'cold weather', 'new year goals']\n    };\n    \n    return topics[season as keyof typeof topics] || ['general fitness', 'health monitoring'];\n  }\n\n  private getSeasonalCategories(season: string): string[] {\n    const categories = {\n      Spring: ['Running Watches', 'Fitness Trackers', 'Outdoor Gear'],\n      Summer: ['Swimming Watches', 'Adventure Gear', 'Travel Tech'],\n      Fall: ['Marathon Watches', 'Indoor Fitness', 'Weather Resistant'],\n      Winter: ['Gift Ideas', 'Indoor Training', 'Health Monitoring']\n    };\n    \n    return categories[season as keyof typeof categories] || ['General Wearables'];\n  }\n\n  private getSeasonalTips(season: string): string[] {\n    const tips = {\n      Spring: [\n        'Calibrate your GPS for outdoor season',\n        'Update fitness goals for spring activities',\n        'Clean and maintain your devices after winter storage'\n      ],\n      Summer: [\n        'Protect devices from heat and sun exposure',\n        'Stay hydrated - use water reminder features',\n        'Track UV exposure for safer outdoor workouts'\n      ],\n      Fall: [\n        'Prepare for shorter daylight hours',\n        'Switch to indoor workout tracking modes',\n        'Consider devices with better visibility in low light'\n      ],\n      Winter: [\n        'Extend battery life in cold weather',\n        'Use indoor activity tracking features',\n        'Set reminders for movement during sedentary periods'\n      ]\n    };\n    \n    return tips[season as keyof typeof tips] || ['General wearable tips'];\n  }\n\n  private matchesSeasonalCategory(product: any, category: string): boolean {\n    // Simple matching logic\n    const productTitle = product.title.toLowerCase();\n    const categoryLower = category.toLowerCase();\n    \n    return productTitle.includes(categoryLower.split(' ')[0]);\n  }\n\n  private calculateSalePrice(originalPrice: string): string {\n    const price = parseFloat(originalPrice.replace(/[^\\d.]/g, ''));\n    const salePrice = price * (0.8 + Math.random() * 0.15); // 15-20% off\n    return `$${salePrice.toFixed(2)}`;\n  }\n\n  private calculateSavings(originalPrice: string): string {\n    const price = parseFloat(originalPrice.replace(/[^\\d.]/g, ''));\n    const savings = price * (0.05 + Math.random() * 0.15); // 5-20% savings\n    return `$${savings.toFixed(2)}`;\n  }\n\n  private identifyKeyDifference(primaryProduct: any, comparisonProduct: any): string {\n    // Simple comparison logic\n    if (primaryProduct.battery_life_hours && comparisonProduct.battery_life_hours) {\n      const diff = primaryProduct.battery_life_hours - comparisonProduct.battery_life_hours;\n      if (Math.abs(diff) > 12) {\n        return diff > 0 ? 'Longer battery life' : 'Shorter battery life';\n      }\n    }\n    \n    if (primaryProduct.price_snapshot && comparisonProduct.price_snapshot) {\n      const price1 = parseFloat(primaryProduct.price_snapshot.replace(/[^\\d.]/g, ''));\n      const price2 = parseFloat(comparisonProduct.price_snapshot.replace(/[^\\d.]/g, ''));\n      const diff = price1 - price2;\n      \n      if (Math.abs(diff) > 50) {\n        return diff > 0 ? 'Higher price point' : 'More affordable';\n      }\n    }\n    \n    return 'Different target audience';\n  }\n}\n\nexport const newsletterAgent = new NewsletterAgent();
+    }, `execute ${task.input?.action || 'unknown'}`);
+  }
+
+  private async generateWeeklyRoundup(tenantId: string, deps: AgentDependencies): Promise<any> {
+    // Get this week's content
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    // Fetch week's published content
+    const { data: weeklyPosts } = await deps.supabase
+      .from('posts')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'published')
+      .gte('published_at', weekStart.toISOString())
+      .lte('published_at', weekEnd.toISOString())
+      .order('published_at', { ascending: false });
+
+    // Get trending products
+    const { data: trendingProducts } = await deps.supabase
+      .from('products')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Generate newsletter content
+    const newsletterContent = await this.generateRoundupContent(
+      weeklyPosts || [], 
+      trendingProducts || [], 
+      deps
+    );
+
+    // Create campaign
+    const campaign = await this.createCampaign(
+      tenantId,
+      'roundup',
+      newsletterContent,
+      deps
+    );
+
+    return {
+      action: 'weekly_roundup_generated',
+      campaignId: campaign.id,
+      subject: campaign.subject,
+      contentSections: Object.keys(newsletterContent.sections),
+      postsIncluded: weeklyPosts?.length || 0,
+      productsHighlighted: trendingProducts?.length || 0
+    };
+  }
+
+  private async createProductSpotlight(tenantId: string, productIds: string[], deps: AgentDependencies): Promise<any> {
+    if (!productIds || productIds.length === 0) {
+      throw new Error('Product IDs are required for spotlight campaign');
+    }
+
+    // Get featured products
+    const { data: products } = await deps.supabase
+      .from('products')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .in('id', productIds);
+
+    if (!products || products.length === 0) {
+      throw new Error('No products found for spotlight');
+    }
+
+    // Get related reviews
+    const { data: reviews } = await deps.supabase
+      .from('posts')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('type', 'review')
+      .eq('status', 'published')
+      .limit(3);
+
+    // Generate spotlight content
+    const spotlightContent = await this.generateSpotlightContent(
+      products[0], // Primary product
+      products.slice(1), // Related products
+      reviews || [],
+      deps
+    );
+
+    // Create campaign
+    const campaign = await this.createCampaign(
+      tenantId,
+      'spotlight',
+      spotlightContent,
+      deps
+    );
+
+    return {
+      action: 'product_spotlight_created',
+      campaignId: campaign.id,
+      featuredProduct: products[0].title,
+      relatedProducts: products.slice(1).map(p => p.title),
+      subject: campaign.subject
+    };
+  }
+
+  private async sendCampaign(
+    tenantId: string,
+    segmentId?: string,
+    templateType?: string,
+    customContent?: any,
+    deps?: AgentDependencies
+  ): Promise<any> {
+    // Get campaign to send
+    let query = deps!.supabase
+      .from('newsletter_campaigns')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'draft');
+
+    if (templateType) {
+      query = query.eq('template_type', templateType);
+    }
+
+    const { data: campaigns } = await query.limit(1);
+    
+    if (!campaigns || campaigns.length === 0) {
+      throw new Error('No draft campaigns found to send');
+    }
+
+    const campaign = campaigns[0];
+
+    // Get subscriber segment
+    const subscribers = await this.getSubscribers(tenantId, segmentId, deps!);
+    
+    if (subscribers.length === 0) {
+      throw new Error('No subscribers found for campaign');
+    }
+
+    // Send campaign (mock implementation)
+    const sendResult = await this.dispatchCampaign(campaign, subscribers, deps!);
+
+    // Update campaign status
+    await deps!.supabase
+      .from('newsletter_campaigns')
+      .update({ 
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+        recipient_count: subscribers.length
+      })
+      .eq('id', campaign.id);
+
+    return {
+      action: 'campaign_sent',
+      campaignId: campaign.id,
+      subject: campaign.subject,
+      recipientCount: subscribers.length,
+      estimatedDelivery: sendResult.estimatedDelivery
+    };
+  }
+
+  private async manageSegments(tenantId: string, deps: AgentDependencies): Promise<any> {
+    // Create default segments if they don't exist
+    const defaultSegments = [
+      {
+        name: 'All Subscribers',
+        rules: { active: true },
+        description: 'All active newsletter subscribers'
+      },
+      {
+        name: 'Fitness Enthusiasts',
+        rules: { 
+          interests: ['fitness', 'health', 'running', 'cycling'],
+          device_preferences: ['fitness_tracker', 'smartwatch']
+        },
+        description: 'Users interested in fitness tracking devices'
+      },
+      {
+        name: 'Tech Early Adopters',
+        rules: {
+          engagement_level: 'high',
+          price_sensitivity: 'low',
+          feature_interests: ['latest_tech', 'premium_features']
+        },
+        description: 'Users who prefer cutting-edge technology'
+      },
+      {
+        name: 'Budget Conscious',
+        rules: {
+          price_range: 'budget',
+          deal_engagement: 'high'
+        },
+        description: 'Users looking for affordable options and deals'
+      },
+      {
+        name: 'Health Monitors',
+        rules: {
+          health_conditions: ['diabetes', 'heart_conditions'],
+          device_needs: ['health_monitoring', 'medical_features']
+        },
+        description: 'Users needing health monitoring capabilities'
+      }
+    ];
+
+    const createdSegments = [];
+    
+    for (const segment of defaultSegments) {
+      // Check if segment exists
+      const { data: existing } = await deps.supabase
+        .from('subscriber_segments')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('name', segment.name)
+        .single();
+
+      if (!existing) {
+        const { data: newSegment } = await deps.supabase
+          .from('subscriber_segments')
+          .insert({
+            tenant_id: tenantId,
+            name: segment.name,
+            rules: segment.rules,
+            description: segment.description
+          })
+          .select()
+          .single();
+        
+        if (newSegment) {
+          createdSegments.push(newSegment);
+        }
+      }
+    }
+
+    // Get all segments for analysis
+    const { data: allSegments } = await deps.supabase
+      .from('subscriber_segments')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    // Calculate segment sizes (mock)
+    const segmentSizes = await this.calculateSegmentSizes(tenantId, allSegments || [], deps);
+
+    return {
+      action: 'segments_managed',
+      segmentsCreated: createdSegments.length,
+      totalSegments: allSegments?.length || 0,
+      segmentSizes
+    };
+  }
+
+  private async analyzePerformance(tenantId: string, deps: AgentDependencies): Promise<any> {
+    // Get recent campaigns
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const { data: campaigns } = await deps.supabase
+      .from('newsletter_campaigns')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'sent')
+      .gte('sent_at', thirtyDaysAgo.toISOString())
+      .order('sent_at', { ascending: false });
+
+    if (!campaigns || campaigns.length === 0) {
+      return { action: 'no_campaigns_to_analyze' };
+    }
+
+    // Calculate metrics (mock implementation)
+    const metrics = this.calculateCampaignMetrics(campaigns);
+    const trends = this.analyzeTrends(campaigns);
+    const recommendations = this.generatePerformanceRecommendations(metrics, trends);
+
+    // Store performance insights
+    await deps.supabase
+      .from('insights')
+      .insert({
+        tenant_id: tenantId,
+        kpi: 'newsletter_performance',
+        value: metrics.averageOpenRate,
+        window: 'monthly',
+        meta: {
+          metrics,
+          trends,
+          recommendations
+        },
+        computed_at: new Date().toISOString()
+      });
+
+    return {
+      action: 'performance_analyzed',
+      campaignsAnalyzed: campaigns.length,
+      averageOpenRate: `${metrics.averageOpenRate}%`,
+      averageClickRate: `${metrics.averageClickRate}%`,
+      bestPerformingTemplate: metrics.bestTemplate,
+      trends,
+      recommendations
+    };
+  }
+
+  private async createSeasonalCampaign(tenantId: string, deps: AgentDependencies): Promise<any> {
+    const currentSeason = this.getCurrentSeason();
+    const seasonalTopics = this.getSeasonalTopics(currentSeason);
+    
+    // Get seasonal products
+    const { data: seasonalProducts } = await deps.supabase
+      .from('products')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .limit(5);
+
+    // Generate seasonal content
+    const seasonalContent = await this.generateSeasonalContent(
+      currentSeason,
+      seasonalTopics,
+      seasonalProducts || [],
+      deps
+    );
+
+    // Create campaign
+    const campaign = await this.createCampaign(
+      tenantId,
+      'seasonal',
+      seasonalContent,
+      deps
+    );
+
+    return {
+      action: 'seasonal_campaign_created',
+      campaignId: campaign.id,
+      season: currentSeason,
+      topics: seasonalTopics,
+      productsIncluded: seasonalProducts?.length || 0
+    };
+  }
+
+  // Helper methods
+  private async generateRoundupContent(
+    posts: any[],
+    products: any[],
+    deps: AgentDependencies
+  ): Promise<any> {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    
+    return {
+      header: {
+        title: `Weekly Wearable Tech Roundup`,
+        subtitle: `Week of ${weekStart.toLocaleDateString()}`,
+        image: 'https://example.com/newsletter-header.jpg'
+      },
+      sections: {
+        intro: {
+          content: 'This week brought exciting developments in wearable technology. Here are the highlights you shouldn\'t miss.'
+        },
+        featured_reviews: {
+          posts: posts.filter(p => p.type === 'review').slice(0, 3).map(post => ({
+            title: post.title,
+            excerpt: post.excerpt,
+            url: `https://example.com/blog/${post.slug}`,
+            image: post.images?.[0]?.url
+          }))
+        },
+        trending_products: {
+          products: products.slice(0, 4).map(product => ({
+            title: product.title,
+            price: product.price_snapshot,
+            image: product.images?.[0]?.url,
+            affiliate_url: product.affiliate_url,
+            rating: product.rating
+          }))
+        },
+        tech_news: {
+          items: [
+            'New fitness tracking algorithms improve accuracy by 15%',
+            'Major smartwatch update adds sleep coaching features',
+            'Wearable market sees 23% growth in health monitoring devices'
+          ]
+        },
+        deals: {
+          items: products.filter(p => p.price_snapshot).slice(0, 3).map(product => ({
+            title: product.title,
+            original_price: product.price_snapshot,
+            sale_price: this.calculateSalePrice(product.price_snapshot),
+            savings: this.calculateSavings(product.price_snapshot),
+            affiliate_url: product.affiliate_url
+          }))
+        }
+      }
+    };
+  }
+
+  private async generateSpotlightContent(
+    primaryProduct: any,
+    relatedProducts: any[],
+    reviews: any[],
+    deps: AgentDependencies
+  ): Promise<any> {
+    return {
+      header: {
+        title: `Product Spotlight: ${primaryProduct.title}`,
+        subtitle: 'In-depth analysis and expert insights',
+        image: primaryProduct.images?.[0]?.url
+      },
+      sections: {
+        hero_product: {
+          product: {
+            title: primaryProduct.title,
+            brand: primaryProduct.brand,
+            price: primaryProduct.price_snapshot,
+            rating: primaryProduct.rating,
+            image: primaryProduct.images?.[0]?.url,
+            affiliate_url: primaryProduct.affiliate_url
+          }
+        },
+        key_features: {
+          features: primaryProduct.features?.slice(0, 5) || [],
+          health_metrics: primaryProduct.health_metrics || [],
+          battery_life: primaryProduct.battery_life_hours,
+          water_resistance: primaryProduct.water_resistance
+        },
+        expert_review: {
+          review: reviews.find(r => r.title.includes(primaryProduct.title.split(' ')[0])) || {
+            title: `${primaryProduct.title} Review`,
+            excerpt: `Our comprehensive review of the ${primaryProduct.title}`,
+            url: `https://example.com/reviews/${primaryProduct.asin}`
+          }
+        },
+        comparisons: {
+          products: relatedProducts.slice(0, 3).map(product => ({
+            title: product.title,
+            price: product.price_snapshot,
+            rating: product.rating,
+            key_difference: this.identifyKeyDifference(primaryProduct, product)
+          }))
+        }
+      }
+    };
+  }
+
+  private async generateSeasonalContent(
+    season: string,
+    topics: string[],
+    products: any[],
+    deps: AgentDependencies
+  ): Promise<any> {
+    return {
+      header: {
+        title: `${season} Wearable Tech Guide`,
+        subtitle: `Best picks for ${season.toLowerCase()} activities`,
+        image: `https://example.com/seasonal/${season.toLowerCase()}.jpg`
+      },
+      sections: {
+        seasonal_intro: {
+          content: `As ${season.toLowerCase()} approaches, it's time to prepare your wearable tech for the season ahead. Here are our top recommendations.`
+        },
+        category_highlights: {
+          categories: this.getSeasonalCategories(season).map(category => ({
+            name: category,
+            products: products.filter(p => this.matchesSeasonalCategory(p, category)).slice(0, 2)
+          }))
+        },
+        seasonal_tips: {
+          tips: this.getSeasonalTips(season)
+        }
+      }
+    };
+  }
+
+  private async createCampaign(
+    tenantId: string,
+    templateType: string,
+    content: any,
+    deps: AgentDependencies
+  ): Promise<NewsletterCampaign> {
+    const template = this.newsletterTemplates[templateType];
+    const htmlContent = await this.generateHTMLContent(template, content, deps);
+    
+    const campaign = {
+      tenant_id: tenantId,
+      template_type: templateType,
+      subject: this.personalizeSubject(template.subject, content),
+      preheader: template.preheader,
+      html: htmlContent,
+      segment: 'all_subscribers',
+      status: 'draft',
+      scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Tomorrow
+    };
+
+    const { data: savedCampaign, error } = await deps.supabase
+      .from('newsletter_campaigns')
+      .insert(campaign)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create campaign: ${error.message}`);
+    }
+
+    return savedCampaign as NewsletterCampaign;
+  }
+
+  private async generateHTMLContent(template: NewsletterTemplate, content: any, deps: AgentDependencies): Promise<string> {
+    // Mock HTML generation - in real implementation, use a template engine
+    let html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${content.header?.title || 'Newsletter'}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; }
+    .section { margin: 30px 0; }
+    .product { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
+    .cta { text-align: center; margin: 30px 0; }
+    .btn { background: #007cba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${content.header?.title || 'Wearable Tech Newsletter'}</h1>
+      <p>${content.header?.subtitle || ''}</p>
+    </div>`;
+
+    // Add content sections based on template structure
+    for (const sectionType of template.structure) {
+      if (content.sections?.[sectionType]) {
+        html += this.renderSection(sectionType, content.sections[sectionType]);
+      }
+    }
+
+    html += `
+    <div class="cta">
+      <a href="#" class="btn">${template.cta.primary}</a>
+    </div>
+    <div class="footer">
+      <p><small>You received this email because you subscribed to our newsletter.</small></p>
+      <p><small><a href="#">Unsubscribe</a> | <a href="#">Update Preferences</a></small></p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return html;
+  }
+
+  private renderSection(sectionType: string, sectionData: any): string {
+    switch (sectionType) {
+      case 'featured_reviews':
+        return `
+    <div class="section">
+      <h2>Featured Reviews</h2>
+      ${(sectionData.posts || []).map((post: any) => `
+        <div class="product">
+          <h3><a href="${post.url}">${post.title}</a></h3>
+          <p>${post.excerpt}</p>
+        </div>
+      `).join('')}
+    </div>`;
+      
+      case 'trending_products':
+        return `
+    <div class="section">
+      <h2>Trending Products</h2>
+      ${(sectionData.products || []).map((product: any) => `
+        <div class="product">
+          <h3>${product.title}</h3>
+          <p>Price: ${product.price || 'N/A'} | Rating: ${product.rating || 'N/A'}</p>
+          <a href="${product.affiliate_url}">View Product</a>
+        </div>
+      `).join('')}
+    </div>`;
+      
+      default:
+        return `
+    <div class="section">
+      <h2>${sectionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h2>
+      <p>${sectionData.content || JSON.stringify(sectionData)}</p>
+    </div>`;
+    }
+  }
+
+  private personalizeSubject(subject: string, content: any): string {
+    const today = new Date();
+    const replacements = {
+      '[Date]': today.toLocaleDateString(),
+      '[Product Name]': content.sections?.hero_product?.product?.title || 'Featured Product',
+      '[Season]': this.getCurrentSeason(),
+      '[Use Case]': 'Fitness & Health'
+    };
+
+    let personalizedSubject = subject;
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      personalizedSubject = personalizedSubject.replace(placeholder, value);
+    });
+
+    return personalizedSubject;
+  }
+
+  private async getSubscribers(tenantId: string, segmentId?: string, deps?: AgentDependencies): Promise<any[]> {
+    // Mock subscribers - in real implementation, query actual subscriber database
+    return [
+      { id: '1', email: 'user1@example.com', preferences: { fitness: true } },
+      { id: '2', email: 'user2@example.com', preferences: { tech: true } },
+      { id: '3', email: 'user3@example.com', preferences: { budget: true } }
+    ];
+  }
+
+  private async dispatchCampaign(campaign: any, subscribers: any[], deps: AgentDependencies): Promise<any> {
+    // Mock email sending - in real implementation, integrate with email service (SendGrid, Mailgun, etc.)
+    console.log(`Sending campaign "${campaign.subject}" to ${subscribers.length} subscribers`);
+    
+    return {
+      sent: subscribers.length,
+      estimatedDelivery: '15 minutes',
+      trackingId: `track_${Date.now()}`
+    };
+  }
+
+  private async calculateSegmentSizes(tenantId: string, segments: any[], deps: AgentDependencies): Promise<Record<string, number>> {
+    // Mock segment size calculation
+    const sizes: Record<string, number> = {};
+    
+    for (const segment of segments) {
+      // In real implementation, count subscribers matching segment rules
+      sizes[segment.name] = Math.floor(Math.random() * 1000) + 100;
+    }
+    
+    return sizes;
+  }
+
+  private calculateCampaignMetrics(campaigns: any[]): EmailMetrics & { bestTemplate: string } {
+    // Mock metrics calculation
+    const totalSent = campaigns.reduce((sum, c) => sum + (c.recipient_count || 0), 0);
+    const avgOpenRate = 25 + Math.random() * 10; // 25-35%
+    const avgClickRate = 3 + Math.random() * 4; // 3-7%
+    
+    return {
+      sent: totalSent,
+      delivered: Math.floor(totalSent * 0.98),
+      opened: Math.floor(totalSent * (avgOpenRate / 100)),
+      clicked: Math.floor(totalSent * (avgClickRate / 100)),
+      unsubscribed: Math.floor(totalSent * 0.005),
+      bounced: Math.floor(totalSent * 0.02),
+      openRate: Math.round(avgOpenRate * 10) / 10,
+      clickRate: Math.round(avgClickRate * 10) / 10,
+      unsubscribeRate: 0.5,
+      bestTemplate: 'roundup' // Most common template
+    };
+  }
+
+  private analyzeTrends(campaigns: any[]): any {
+    return {
+      openRateTrend: 'increasing',
+      clickRateTrend: 'stable',
+      bestDayToSend: 'Friday',
+      bestTimeToSend: '10:00 AM',
+      topPerformingSubjectLines: [
+        'Weekly Roundup',
+        'Product Spotlight',
+        'Deal Alert'
+      ]
+    };
+  }
+
+  private generatePerformanceRecommendations(metrics: any, trends: any): string[] {
+    const recommendations = [];
+    
+    if (metrics.openRate < 20) {
+      recommendations.push('Improve subject lines to increase open rates');
+    }
+    
+    if (metrics.clickRate < 3) {
+      recommendations.push('Add more compelling calls-to-action');
+    }
+    
+    if (metrics.unsubscribeRate > 1) {
+      recommendations.push('Review content relevance and frequency');
+    }
+    
+    if (recommendations.length === 0) {
+      recommendations.push('Newsletter performance is strong - maintain current strategy');
+    }
+    
+    return recommendations;
+  }
+
+  // Utility methods
+  private getCurrentSeason(): string {
+    const month = new Date().getMonth();
+    if (month >= 2 && month <= 4) return 'Spring';
+    if (month >= 5 && month <= 7) return 'Summer';
+    if (month >= 8 && month <= 10) return 'Fall';
+    return 'Winter';
+  }
+
+  private getSeasonalTopics(season: string): string[] {
+    const topics = {
+      Spring: ['outdoor fitness', 'running prep', 'cycling season', 'spring cleaning'],
+      Summer: ['swimming tracking', 'vacation tech', 'heat monitoring', 'UV protection'],
+      Fall: ['back to school', 'marathon training', 'weather resistance', 'indoor workouts'],
+      Winter: ['holiday gifts', 'indoor fitness', 'cold weather', 'new year goals']
+    };
+    
+    return topics[season as keyof typeof topics] || ['general fitness', 'health monitoring'];
+  }
+
+  private getSeasonalCategories(season: string): string[] {
+    const categories = {
+      Spring: ['Running Watches', 'Fitness Trackers', 'Outdoor Gear'],
+      Summer: ['Swimming Watches', 'Adventure Gear', 'Travel Tech'],
+      Fall: ['Marathon Watches', 'Indoor Fitness', 'Weather Resistant'],
+      Winter: ['Gift Ideas', 'Indoor Training', 'Health Monitoring']
+    };
+    
+    return categories[season as keyof typeof categories] || ['General Wearables'];
+  }
+
+  private getSeasonalTips(season: string): string[] {
+    const tips = {
+      Spring: [
+        'Calibrate your GPS for outdoor season',
+        'Update fitness goals for spring activities',
+        'Clean and maintain your devices after winter storage'
+      ],
+      Summer: [
+        'Protect devices from heat and sun exposure',
+        'Stay hydrated - use water reminder features',
+        'Track UV exposure for safer outdoor workouts'
+      ],
+      Fall: [
+        'Prepare for shorter daylight hours',
+        'Switch to indoor workout tracking modes',
+        'Consider devices with better visibility in low light'
+      ],
+      Winter: [
+        'Extend battery life in cold weather',
+        'Use indoor activity tracking features',
+        'Set reminders for movement during sedentary periods'
+      ]
+    };
+    
+    return tips[season as keyof typeof tips] || ['General wearable tips'];
+  }
+
+  private matchesSeasonalCategory(product: any, category: string): boolean {
+    // Simple matching logic
+    const productTitle = product.title.toLowerCase();
+    const categoryLower = category.toLowerCase();
+    
+    return productTitle.includes(categoryLower.split(' ')[0]);
+  }
+
+  private calculateSalePrice(originalPrice: string): string {
+    const price = parseFloat(originalPrice.replace(/[^\d.]/g, ''));
+    const salePrice = price * (0.8 + Math.random() * 0.15); // 15-20% off
+    return `$${salePrice.toFixed(2)}`;
+  }
+
+  private calculateSavings(originalPrice: string): string {
+    const price = parseFloat(originalPrice.replace(/[^\d.]/g, ''));
+    const savings = price * (0.05 + Math.random() * 0.15); // 5-20% savings
+    return `$${savings.toFixed(2)}`;
+  }
+
+  private identifyKeyDifference(primaryProduct: any, comparisonProduct: any): string {
+    // Simple comparison logic
+    if (primaryProduct.battery_life_hours && comparisonProduct.battery_life_hours) {
+      const diff = primaryProduct.battery_life_hours - comparisonProduct.battery_life_hours;
+      if (Math.abs(diff) > 12) {
+        return diff > 0 ? 'Longer battery life' : 'Shorter battery life';
+      }
+    }
+    
+    if (primaryProduct.price_snapshot && comparisonProduct.price_snapshot) {
+      const price1 = parseFloat(primaryProduct.price_snapshot.replace(/[^\d.]/g, ''));
+      const price2 = parseFloat(comparisonProduct.price_snapshot.replace(/[^\d.]/g, ''));
+      const diff = price1 - price2;
+      
+      if (Math.abs(diff) > 50) {
+        return diff > 0 ? 'Higher price point' : 'More affordable';
+      }
+    }
+    
+    return 'Different target audience';
+  }
+}
+
+export const newsletterAgent = new NewsletterAgent();

@@ -6,7 +6,7 @@ import { getTenantTaxonomy } from '../../../../lib/content';
 
 interface RoutesLayoutProps {
   children: ReactNode;
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function RoutesLayout({ children, params }: RoutesLayoutProps) {
@@ -52,6 +52,9 @@ export default async function RoutesLayout({ children, params }: RoutesLayoutPro
             © {new Date().getFullYear()} {tenant?.name ?? 'Affiliate Factory'}. Amazon Associates tag jmpkc01-20.
           </p>
           <div className="flex gap-4">
+            <Link href={`/${tenantSlug}/affiliate-disclosure`} className="hover:text-white">
+              Affiliate Disclosure
+            </Link>
             <Link href={`/${tenantSlug}/privacy`} className="hover:text-white">
               Privacy
             </Link>

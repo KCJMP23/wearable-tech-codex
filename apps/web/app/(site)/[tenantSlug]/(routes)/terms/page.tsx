@@ -1,15 +1,16 @@
 import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getTenantBySlug } from '../../../../lib/tenant';
-import { getKbEntry } from '../../../../lib/content';
+import { getTenantBySlug } from '@/lib/tenant';
+import { getKbEntry } from '@/lib/content';
 
 interface TermsPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function TermsPage({ params }: TermsPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
   const terms = await getKbEntry(tenant.id, 'policy', 'Terms of Service');
   return (

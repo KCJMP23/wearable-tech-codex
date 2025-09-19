@@ -31,17 +31,24 @@ export function ProductCardPremium({ product }: ProductCardPremiumProps) {
           {product.waterResistance ? <span>Water: {product.waterResistance}</span> : null}
           {product.healthMetrics?.length ? <span>Sensors: {product.healthMetrics.join(', ')}</span> : null}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-3">
-          <Link href={product.affiliateUrl} className="flex-1" prefetch={false} target="_blank" rel="nofollow noopener">
-            <Button className="w-full" variant="primary">
-              Buy on Amazon
-            </Button>
-          </Link>
-          {product.rating ? (
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
-              {product.rating.toFixed(1)}★
-            </span>
-          ) : null}
+        <div className="mt-auto">
+          <div className="flex items-center justify-between gap-3">
+            <Link href={product.affiliateUrl} className="flex-1" prefetch={false} target="_blank" rel="nofollow noopener">
+              <Button className="w-full" variant="primary">
+                Buy on Amazon
+              </Button>
+            </Link>
+            {product.rating ? (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
+                {product.rating.toFixed(1)}★
+              </span>
+            ) : null}
+          </div>
+          {product.affiliateUrl && (
+            <div className="text-center mt-2">
+              <span className="text-xs text-neutral-500">#ad</span>
+            </div>
+          )}
         </div>
       </div>
     </article>

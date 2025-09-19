@@ -153,15 +153,22 @@ export function ProductDetailLayout({ product, tenantSlug, relatedProducts }: Pr
           {/* Action Buttons */}
           <div className="mt-8 space-y-4">
             {product.affiliateUrl && (
-              <a
-                href={product.affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold text-center hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <ShoppingBagIcon className="h-5 w-5" />
-                Buy on Amazon
-              </a>
+              <div>
+                <a
+                  href={product.affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold text-center hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShoppingBagIcon className="h-5 w-5" />
+                  Buy on Amazon
+                </a>
+                <div className="text-center mt-2">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    #ad - As an Amazon Associate I earn from qualifying purchases
+                  </span>
+                </div>
+              </div>
             )}
 
             <div className="flex gap-4">

@@ -1,0 +1,103 @@
+{
+  "expo": {
+    "name": "Wearable Tech Codex",
+    "slug": "wearable-tech-codex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wearabletechcodex.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to capture product photos for your affiliate sites.",
+        "NSFaceIDUsageDescription": "This app uses Face ID for secure authentication.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide location-based affiliate recommendations."
+      },
+      "associatedDomains": [
+        "applinks:*.wearabletech.ai"
+      ]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.wearabletechcodex.mobile",
+      "permissions": [
+        "CAMERA",
+        "USE_FINGERPRINT",
+        "USE_BIOMETRIC",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "*.wearabletech.ai"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Wearable Tech Codex to access your camera to capture product photos."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Wearable Tech Codex to use Face ID for secure authentication."
+        }
+      ]
+    ],
+    "scheme": "wearable-tech-codex",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/your-eas-project-id"
+    }
+  }
+}

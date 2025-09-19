@@ -1,10 +1,11 @@
 import { loadEnv } from '@affiliate-factory/sdk';
 
 interface WebhooksPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
-export default function WebhooksPage({ params }: WebhooksPageProps) {
+export default async function WebhooksPage({ params }: WebhooksPageProps) {
+  const { tenantSlug } = await params;
   const env = loadEnv();
   const base = `${env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1`;
   const endpoints = [

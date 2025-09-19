@@ -28,6 +28,33 @@ export default async function HomepagePage({ params }: HomepagePageProps) {
           <div className="p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 text-white">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.375 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Category Cards</dt>
+                  <dd className="text-lg font-medium text-gray-900">Sticky Scroll</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 px-5 py-3">
+            <div className="text-sm">
+              <Link href={`/admin/${tenantSlug}/homepage/categories`} className="font-medium text-indigo-600 hover:text-indigo-500">
+                Manage categories →
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative group bg-white overflow-hidden rounded-lg border border-gray-200 shadow hover:shadow-md transition-shadow">
+          <div className="p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500 text-white">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .525.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .525.045.75.128m-12 0A2.25 2.25 0 004.5 12v6a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 18v-6a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6z" />

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createServiceClient } from '../../../../lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 
 export async function rescheduleCalendarItem(tenantSlug: string, itemId: string, runAt: string) {
   const client = createServiceClient();

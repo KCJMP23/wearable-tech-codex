@@ -12,11 +12,12 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface SettingsPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
-  const tenant = await getTenantBySlug(params.tenantSlug);
+  const { tenantSlug } = await params;
+  const tenant = await getTenantBySlug(tenantSlug);
   if (!tenant) notFound();
 
   const settingSections = [

@@ -1,16 +1,18 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { loadEnv } from './env';
+import type { Database } from './database.types';
 
 export type SupabaseRole = 'anon' | 'service';
+export type TypedSupabaseClient = SupabaseClient<Database>;
 
-let anonClient: SupabaseClient | null = null;
-let serviceClient: SupabaseClient | null = null;
+let anonClient: TypedSupabaseClient | null = null;
+let serviceClient: TypedSupabaseClient | null = null;
 
-export function getSupabaseClient(role: SupabaseRole = 'anon'): SupabaseClient {
+export function getSupabaseClient(role: SupabaseRole = 'anon'): TypedSupabaseClient {
   const env = loadEnv();
   if (role === 'anon') {
     if (!anonClient) {
-      anonClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+      anonClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
         auth: {
           persistSession: false
         }
@@ -20,7 +22,7 @@ export function getSupabaseClient(role: SupabaseRole = 'anon'): SupabaseClient {
   }
 
   if (!serviceClient) {
-    serviceClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    serviceClient = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
       global: {
         headers: {
           'x-tenant-domain': env.DEFAULT_TENANT_DOMAIN
@@ -31,7 +33,7 @@ export function getSupabaseClient(role: SupabaseRole = 'anon'): SupabaseClient {
   return serviceClient;
 }
 
-export async function withServiceClient<T>(callback: (client: SupabaseClient) => Promise<T>): Promise<T> {
+export async function withServiceClient<T>(callback: (client: TypedSupabaseClient) => Promise<T>): Promise<T> {
   const client = getSupabaseClient('service');
   return callback(client);
 }

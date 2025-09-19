@@ -54,7 +54,7 @@ const steps: OnboardingStep[] = [
         name: 'tagline',
         label: 'Tagline',
         type: 'text',
-        placeholder: 'Your trusted source for wearable tech',
+        placeholder: 'Your trusted source for [your niche]',
         required: true
       }
     ]
@@ -62,22 +62,22 @@ const steps: OnboardingStep[] = [
   {
     id: 'niche',
     title: 'Niche Selection',
-    description: 'Choose your wearable tech focus areas',
+    description: 'Define your affiliate marketing focus',
     icon: Store,
     fields: [
       {
         name: 'primaryNiche',
-        label: 'Primary Focus',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'smartwatches', label: 'Smartwatches' },
-          { value: 'fitness', label: 'Fitness Trackers' },
-          { value: 'health', label: 'Health Monitors' },
-          { value: 'ar-vr', label: 'AR/VR Headsets' },
-          { value: 'smart-clothing', label: 'Smart Clothing' },
-          { value: 'all', label: 'All Wearables' }
-        ]
+        label: 'Primary Niche',
+        type: 'text',
+        placeholder: 'e.g., Wearable Tech, Golf Equipment, Pet Supplies, Home Decor',
+        required: true
+      },
+      {
+        name: 'nicheDescription',
+        label: 'Niche Description',
+        type: 'text',
+        placeholder: 'Brief description of your niche market',
+        required: false
       },
       {
         name: 'targetAudience',
@@ -85,10 +85,13 @@ const steps: OnboardingStep[] = [
         type: 'select',
         required: true,
         options: [
-          { value: 'athletes', label: 'Athletes & Fitness Enthusiasts' },
-          { value: 'health', label: 'Health-Conscious Consumers' },
-          { value: 'tech', label: 'Tech Enthusiasts' },
-          { value: 'business', label: 'Business Professionals' },
+          { value: 'enthusiasts', label: 'Hobby Enthusiasts' },
+          { value: 'professionals', label: 'Professionals' },
+          { value: 'beginners', label: 'Beginners/Newcomers' },
+          { value: 'families', label: 'Families' },
+          { value: 'seniors', label: 'Senior Citizens' },
+          { value: 'millennials', label: 'Millennials' },
+          { value: 'gen-z', label: 'Gen Z' },
           { value: 'general', label: 'General Consumers' }
         ]
       },
@@ -97,9 +100,10 @@ const steps: OnboardingStep[] = [
         label: 'Price Range Focus',
         type: 'select',
         options: [
-          { value: 'budget', label: 'Budget (< $100)' },
-          { value: 'mid', label: 'Mid-Range ($100-$500)' },
-          { value: 'premium', label: 'Premium ($500+)' },
+          { value: 'budget', label: 'Budget (< $50)' },
+          { value: 'mid', label: 'Mid-Range ($50-$200)' },
+          { value: 'premium', label: 'Premium ($200+)' },
+          { value: 'luxury', label: 'Luxury ($500+)' },
           { value: 'all', label: 'All Price Ranges' }
         ]
       }
@@ -151,9 +155,10 @@ const steps: OnboardingStep[] = [
         required: true,
         options: [
           { value: 'reviews', label: 'Product Reviews' },
-          { value: 'comparisons', label: 'Comparisons & Guides' },
-          { value: 'news', label: 'Industry News' },
-          { value: 'tutorials', label: 'How-To & Tutorials' },
+          { value: 'comparisons', label: 'Comparisons & Buying Guides' },
+          { value: 'news', label: 'Industry News & Trends' },
+          { value: 'tutorials', label: 'How-To & Educational Content' },
+          { value: 'lifestyle', label: 'Lifestyle & Use Cases' },
           { value: 'mixed', label: 'Mixed Content' }
         ]
       },
@@ -182,9 +187,10 @@ const steps: OnboardingStep[] = [
         type: 'select',
         required: true,
         options: [
-          { value: 'auto', label: 'Auto-select Top Products' },
-          { value: 'asins', label: 'Enter Amazon ASINs' },
-          { value: 'category', label: 'Import by Category' },
+          { value: 'auto', label: 'Auto-select Popular Products' },
+          { value: 'asins', label: 'Enter Specific Product IDs' },
+          { value: 'category', label: 'Import by Category/Keywords' },
+          { value: 'manual', label: 'I\'ll Add Manually Later' },
           { value: 'skip', label: 'Skip for Now' }
         ]
       },

@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface AboutPageProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function AboutPage({ params }: AboutPageProps) {
@@ -44,7 +44,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
     {
       icon: GlobeAltIcon,
       title: 'Global Reach',
-      description: 'Serving customers worldwide with the latest in wearable technology innovations.'
+      description: `Serving customers worldwide with the latest in ${(tenant as any).niche?.toLowerCase() || 'product'} innovations.`
     },
     {
       icon: UserGroupIcon,
@@ -97,7 +97,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
             About {tenant.name}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {about?.content ?? `We're passionate about helping you discover the best wearable technology to enhance your health, fitness, and lifestyle. Our expert team rigorously tests and reviews every product we recommend.`}
+            {about?.content ?? `We're passionate about helping you discover the best ${(tenant as any).niche?.toLowerCase() || 'products'} to enhance your lifestyle and meet your needs. Our expert team rigorously tests and reviews every product we recommend.`}
           </p>
         </div>
 
@@ -116,9 +116,9 @@ export default async function AboutPage({ params }: AboutPageProps) {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
             <p className="text-lg text-gray-700 leading-relaxed">
-              We believe that wearable technology should empower everyone to live healthier, more connected lives. 
+              We believe that quality ${(tenant as any).niche?.toLowerCase() || 'products'} should empower everyone to live better, more fulfilling lives. 
               Our mission is to cut through the marketing noise and provide honest, comprehensive reviews that help 
-              you make informed decisions about the tech you wear every day.
+              you make informed decisions about the ${(tenant as any).niche?.toLowerCase() || 'products'} you choose.
             </p>
           </div>
         </div>

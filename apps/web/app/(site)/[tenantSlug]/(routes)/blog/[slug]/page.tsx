@@ -6,18 +6,15 @@ import { getTenantBySlug } from '@/lib/tenant';
 import { getPostBySlug, getPostProducts } from '@/lib/content';
 import { WoodstockNavigation } from '@/components/WoodstockNavigation';
 import { WoodstockFooter } from '@/components/WoodstockFooter';
-import { ProductCard } from '@/components/ProductCard';
 import { 
   CalendarIcon, 
-  ClockIcon, 
+  ClockIcon,
   ShareIcon,
-  BookmarkIcon,
-  UserIcon
+  BookmarkIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon } from '@heroicons/react/24/solid';
 
 interface BlogPostPageProps {
-  params: { tenantSlug: string; slug: string };
+  params: Promise<{ tenantSlug: string; slug: string }>;
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
@@ -27,7 +24,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const post = await getPostBySlug(tenant.id, slug);
   if (!post) notFound();
-  const products = await getPostProducts(post.id);
+
+  // Comment out products for now to test
+  // const products = await getPostProducts(post.id);
 
   return (
     <div className="min-h-screen bg-white">
@@ -84,14 +83,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <span>8 min read</span>
               </div>
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors">
-                  <ShareIcon className="h-4 w-4" />
-                  <span>Share</span>
-                </button>
-                <button className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors">
-                  <BookmarkIcon className="h-4 w-4" />
-                  <span>Save</span>
-                </button>
+                <ShareIcon className="h-4 w-4" />
+                <BookmarkIcon className="h-4 w-4" />
               </div>
             </div>
           </div>
@@ -105,20 +98,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             className="w-full h-96 object-cover rounded-lg"
           />
         </div>
-
-        {/* Featured Products */}
-        {products.length > 0 && (
-          <section className="mb-12">
-            <div className="bg-blue-50 rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Products Featured in This Article</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.slice(0, 3).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Article Content */}
         <div className="prose prose-lg prose-gray max-w-none mb-12">
@@ -154,62 +133,6 @@ For dedicated fitness enthusiasts, the Garmin series provides unparalleled accur
 The wearable technology landscape continues to evolve rapidly, with new innovations emerging regularly. Stay tuned for our upcoming reviews and comparisons.
             `}
           </ReactMarkdown>
-        </div>
-
-        {/* Article Rating */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-12">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Rate this article</h3>
-          <div className="flex items-center gap-2 mb-4">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <StarIcon key={star} className="h-6 w-6 text-gray-300 hover:text-yellow-400 cursor-pointer transition-colors" />
-            ))}
-          </div>
-          <p className="text-sm text-gray-600">Help us improve our content by rating this article</p>
-        </div>
-
-        {/* Related Articles */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Articles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[1, 2].map((i) => (
-              <article key={i} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                <img 
-                  src={`https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400&h=200&fit=crop&seed=${i}`}
-                  alt="Related article"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Related Wearable Tech Guide #{i}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Discover the latest trends and recommendations in wearable technology.
-                  </p>
-                  <Link href="#" className="text-blue-600 font-medium hover:text-blue-700 transition-colors">
-                    Read More →
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Newsletter CTA */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-center text-white mb-12">
-          <h2 className="text-2xl font-bold mb-4">Stay Updated with Our Latest Reviews</h2>
-          <p className="mb-6 opacity-90">
-            Get expert insights and exclusive deals delivered to your inbox weekly.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
-            />
-            <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-              Subscribe
-            </button>
-          </div>
         </div>
       </article>
 

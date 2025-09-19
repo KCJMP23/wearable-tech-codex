@@ -7,7 +7,7 @@ import { WoodstockFooter } from '@/components/WoodstockFooter';
 import { CalendarIcon, ClockIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 interface BlogIndexProps {
-  params: { tenantSlug: string };
+  params: Promise<{ tenantSlug: string }>;
 }
 
 export default async function BlogIndex({ params }: BlogIndexProps) {
