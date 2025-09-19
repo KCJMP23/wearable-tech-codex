@@ -1,3 +1,5 @@
+'use client';
+
 interface HolidayBannerProps {
   title: string;
   description: string;

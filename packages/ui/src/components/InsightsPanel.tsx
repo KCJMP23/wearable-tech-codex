@@ -1,3 +1,5 @@
+'use client';
+
 import type { InsightCard } from '@affiliate-factory/sdk';
 import { Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './Card';

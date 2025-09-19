@@ -1,3 +1,5 @@
+'use client';
+
 import { addDays, format, startOfWeek } from 'date-fns';
 import type { CalendarItem } from '@affiliate-factory/sdk';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
