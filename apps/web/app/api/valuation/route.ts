@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { apiAuth } from '@/lib/api/auth';
-import { SiteValuator, type ValuationMetrics } from '@affiliate-factory/sdk/valuation';
+import { SiteValuator, type ValuationMetrics } from '@affiliate-factory/sdk';
 
 // Validation schemas
 const ValuationMetricsSchema = z.object({

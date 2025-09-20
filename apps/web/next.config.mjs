@@ -19,6 +19,29 @@ const nextConfig = {
   
   // Webpack optimizations
   webpack: (config, { isServer }) => {
+    // Fix for rate-limiter-flexible TypeScript definitions
+    config.module.rules.push({
+      test: /\.d\.ts$/,
+      use: 'ignore-loader',
+    });
+    
+    // Configure fallbacks for Node.js modules in client-side builds
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+      };
+    }
+    
+    // Exclude problematic packages from webpack processing
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'rate-limiter-flexible': isServer ? 'rate-limiter-flexible' : false,
+    };
     // Enable tree shaking
     config.optimization = {
       ...config.optimization,

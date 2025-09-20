@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 import axios from 'axios';
 import { loadEnv } from './env';
 import type { AmazonProductResponse, Product } from './types';

@@ -559,16 +559,5 @@ function handleApiError(error: unknown): NextResponse {
   return NextResponse.json(createErrorResponse(systemError), { status: 500 });
 }
 
-// Export route handlers for specific paths
-export { 
-  GET, 
-  POST, 
-  getEscrowDetails as getById,
-  updateEscrow as updateById,
-  updateMilestone,
-  approveMilestone,
-  releaseFunds,
-  createDispute,
-  uploadDocument,
-  handleWebhook 
-};
+// Functions are automatically exported above as individual exports
+// This explicit export block is not needed for Next.js API routes

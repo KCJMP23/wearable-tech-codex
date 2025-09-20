@@ -10,7 +10,7 @@
  * @module valuation
  */
 
-import { createClient } from './supabase/index.js';
+import { createClient } from './supabase/client';
 
 // =============================================================================
 // Types
