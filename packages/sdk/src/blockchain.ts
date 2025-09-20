@@ -8,7 +8,7 @@ import type {
   RegisterConversionRequest,
   AffiliateStats,
 } from '@affiliate-factory/blockchain/types';
-import { supabase } from './supabase';
+import { getSupabaseClient } from './supabase';
 import type { Database } from './database.types';
 
 /**
@@ -34,7 +34,7 @@ export class BlockchainIntegrationService {
       const transactionHash = await this.blockchainService.registerClick(request);
 
       // Store transaction record in database
-      const { data: transaction, error } = await supabase
+      const { data: transaction, error } = await getSupabaseClient('service')
         .from('blockchain_transactions')
         .insert({
           tenant_id: tenantId,
@@ -83,7 +83,7 @@ export class BlockchainIntegrationService {
       const transactionHash = await this.blockchainService.registerConversion(request);
 
       // Store transaction record in database
-      const { data: transaction, error } = await supabase
+      const { data: transaction, error } = await getSupabaseClient('service')
         .from('blockchain_transactions')
         .insert({
           tenant_id: tenantId,
@@ -141,7 +141,7 @@ export class BlockchainIntegrationService {
       status?: string;
     } = {}
   ): Promise<Database['public']['Tables']['blockchain_transactions']['Row'][]> {
-    let query = supabase
+    let query = getSupabaseClient('service')
       .from('blockchain_transactions')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -180,7 +180,7 @@ export class BlockchainIntegrationService {
     affiliate: Address
   ): Promise<Array<{ token: Address; amount: bigint; conversionCount: number }>> {
     // Get conversions that haven't been paid
-    const { data: conversions, error } = await supabase
+    const { data: conversions, error } = await getSupabaseClient('service')
       .from('blockchain_transactions')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -229,7 +229,7 @@ export class BlockchainIntegrationService {
       const receipt = await this.blockchainService.waitForTransactionConfirmation(transactionHash);
 
       // Update database record
-      await supabase
+      await getSupabaseClient('service')
         .from('blockchain_transactions')
         .update({
           status: receipt.status === 'success' ? 'confirmed' : 'failed',
@@ -248,7 +248,7 @@ export class BlockchainIntegrationService {
       console.error(`Failed to confirm transaction ${transactionHash}:`, error);
       
       // Update database to reflect failure
-      await supabase
+      await getSupabaseClient('service')
         .from('blockchain_transactions')
         .update({
           status: 'failed',
@@ -290,7 +290,7 @@ export class BlockchainIntegrationService {
   private async handleClickEvent(tenantId: string, log: any): Promise<void> {
     try {
       // Update insights table with click data
-      await supabase.from('insights').insert({
+      await getSupabaseClient('service').from('insights').insert({
         tenant_id: tenantId,
         type: 'blockchain_click',
         source: 'smart_contract',
@@ -317,7 +317,7 @@ export class BlockchainIntegrationService {
   private async handleConversionEvent(tenantId: string, log: any): Promise<void> {
     try {
       // Update insights table with conversion data
-      await supabase.from('insights').insert({
+      await getSupabaseClient('service').from('insights').insert({
         tenant_id: tenantId,
         type: 'blockchain_conversion',
         source: 'smart_contract',
@@ -345,7 +345,7 @@ export class BlockchainIntegrationService {
   private async handleCommissionPaidEvent(tenantId: string, log: any): Promise<void> {
     try {
       // Update insights table with commission payment data
-      await supabase.from('insights').insert({
+      await getSupabaseClient('service').from('insights').insert({
         tenant_id: tenantId,
         type: 'blockchain_commission',
         source: 'smart_contract',
@@ -364,7 +364,7 @@ export class BlockchainIntegrationService {
       });
 
       // Update user rewards table
-      await supabase.from('user_rewards').insert({
+      await getSupabaseClient('service').from('user_rewards').insert({
         tenant_id: tenantId,
         user_identifier: log.args.affiliate,
         reward_type: 'commission',
