@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-import { type ValuationMetrics, type ValuationResult, formatValuation } from '@affiliate-factory/sdk/valuation';
+import { type ValuationMetrics, type ValuationResult, formatValuation } from '@affiliate-factory/sdk';
 
 // Form validation schema
 const ValuationFormSchema = z.object({

@@ -146,3 +146,60 @@ export function withErrorBoundary<P extends object>(
     </ErrorBoundary>
   );
 }
+
+// Specialized error boundary for ML features
+export function MLFeatureErrorBoundary({ 
+  children, 
+  feature 
+}: { 
+  children: ReactNode; 
+  feature: string;
+}) {
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="flex items-center justify-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="text-center">
+            <AlertTriangle className="mx-auto h-6 w-6 text-yellow-500 mb-3" />
+            <h4 className="text-md font-medium text-yellow-800 mb-2">
+              {feature} Temporarily Unavailable
+            </h4>
+            <p className="text-sm text-yellow-600">
+              This AI-powered feature is currently being optimized. 
+              Basic functionality remains available.
+            </p>
+          </div>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+// Hook for safely calling ML functions with error handling
+export function useMLFeature<T extends any[], R>(
+  mlFunction: (...args: T) => Promise<R>,
+  fallbackValue: R,
+  feature: string
+) {
+  return React.useCallback(async (...args: T): Promise<R> => {
+    try {
+      return await mlFunction(...args);
+    } catch (error) {
+      console.warn(`ML Feature Error (${feature}):`, error);
+      
+      // Log to monitoring service in production
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        console.error('ML Feature Error:', {
+          feature,
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+          url: window.location.href
+        });
+      }
+      
+      return fallbackValue;
+    }
+  }, [mlFunction, fallbackValue, feature]);
+}

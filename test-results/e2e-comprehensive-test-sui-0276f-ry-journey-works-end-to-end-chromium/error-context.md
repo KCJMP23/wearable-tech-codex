@@ -1,0 +1,584 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8] [cursor=pointer]
+  - alert [ref=e11]
+  - link "Skip to content" [ref=e12] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e13]:
+    - generic [ref=e15]:
+      - link "HM Healthcare Partners" [ref=e16] [cursor=pointer]:
+        - /url: /
+        - img "HM Healthcare Partners" [ref=e18] [cursor=pointer]
+      - navigation [ref=e19]:
+        - link "About" [ref=e21] [cursor=pointer]:
+          - /url: /about
+        - link "Platform" [ref=e23] [cursor=pointer]:
+          - /url: /platforms
+        - link "Research" [ref=e25] [cursor=pointer]:
+          - /url: /research
+        - link "Services" [ref=e27] [cursor=pointer]:
+          - /url: /services
+        - link "Blog" [ref=e29] [cursor=pointer]:
+          - /url: /blog
+        - link "Contact" [ref=e31] [cursor=pointer]:
+          - /url: /contact
+          - generic [ref=e32] [cursor=pointer]: Contact
+      - button "Switch to dark mode" [ref=e34] [cursor=pointer]:
+        - img [ref=e35] [cursor=pointer]
+  - main [ref=e37]:
+    - main [ref=e38]:
+      - region [ref=e40]:
+        - generic [ref=e42]:
+          - group [ref=e43]:
+            - generic [ref=e44]:
+              - img "Healthcare background" [ref=e45]
+              - generic [ref=e47]:
+                - generic [ref=e48]: CRO-Venture Leader
+                - paragraph [ref=e49]: Accelerating Digital Health Startups to Market
+                - heading "CRO-Venture Model for Healthcare Innovation" [level=1] [ref=e50]
+                - paragraph [ref=e51]: Our unique CRO-venture model provides comprehensive clinical research services and funding to support digital health innovation from preclinical studies through FDA approval.
+                - generic [ref=e52]:
+                  - link "Explore CRO Services" [ref=e53] [cursor=pointer]:
+                    - /url: /research
+                    - generic [ref=e54] [cursor=pointer]: Explore CRO Services
+                  - link "Partner With Us" [ref=e55] [cursor=pointer]:
+                    - /url: /contact
+                    - generic [ref=e56] [cursor=pointer]: Partner With Us
+          - group [ref=e57]:
+            - generic [ref=e58]:
+              - img "Healthcare background" [ref=e59]
+              - generic [ref=e61]:
+                - generic [ref=e62]: Digital Health Innovation
+                - paragraph [ref=e63]: Integrated Clinical Research Technology
+                - heading "ONEHealth Ecosystem Platform" [level=1] [ref=e64]
+                - paragraph [ref=e65]: Revolutionary platform connecting EHR systems, wearable devices, and clinical workflows to enable technology-driven trials and comprehensive digital health solutions.
+                - generic [ref=e66]:
+                  - link "View Platforms" [ref=e67] [cursor=pointer]:
+                    - /url: /platforms
+                    - generic [ref=e68] [cursor=pointer]: View Platforms
+                  - link "See Partners" [ref=e69] [cursor=pointer]:
+                    - /url: /partners
+                    - generic [ref=e70] [cursor=pointer]: See Partners
+          - group [ref=e71]:
+            - generic [ref=e72]:
+              - img "Healthcare background" [ref=e73]
+              - generic [ref=e75]:
+                - generic [ref=e76]: Clinical Trial Excellence
+                - paragraph [ref=e77]: Faster, More Efficient Research
+                - heading "Technology-Driven Clinical Trials" [level=1] [ref=e78]
+                - paragraph [ref=e79]: Advanced clinical trial management with AI-powered analytics, regulatory expertise, and comprehensive data management for biotech and mHealth startups.
+                - generic [ref=e80]:
+                  - link "Start Clinical Trial" [ref=e81] [cursor=pointer]:
+                    - /url: /contact
+                    - generic [ref=e82] [cursor=pointer]: Start Clinical Trial
+                  - link "Research Capabilities" [ref=e83] [cursor=pointer]:
+                    - /url: /research/clinical-studies
+                    - generic [ref=e84] [cursor=pointer]: Research Capabilities
+          - group [ref=e85]:
+            - generic [ref=e86]:
+              - img "Healthcare background" [ref=e87]
+              - generic [ref=e89]:
+                - generic [ref=e90]: Quality Improvement Research
+                - paragraph [ref=e91]: Quality Improvement Research
+                - heading "Evidence-Based Healthcare Analytics & QI Studies" [level=1] [ref=e92]
+                - paragraph [ref=e93]: Specialized CRO services for quality improvement research, healthcare analytics, and evidence generation driving measurable patient outcomes.
+                - generic [ref=e94]:
+                  - link "QI Research Services" [ref=e95] [cursor=pointer]:
+                    - /url: /research/qa-qi
+                    - generic [ref=e96] [cursor=pointer]: QI Research Services
+                  - link "View Analytics Platform" [ref=e97] [cursor=pointer]:
+                    - /url: /platforms
+                    - generic [ref=e98] [cursor=pointer]: View Analytics Platform
+        - generic [ref=e100]:
+          - button "Go to slide 1" [ref=e101] [cursor=pointer]
+          - button "Go to slide 2" [ref=e102] [cursor=pointer]
+          - button "Go to slide 3" [ref=e103] [cursor=pointer]
+          - button "Go to slide 4" [ref=e104] [cursor=pointer]
+        - button "Previous slide" [ref=e106] [cursor=pointer]:
+          - generic [ref=e107] [cursor=pointer]:
+            - img [ref=e108] [cursor=pointer]
+            - generic [ref=e110] [cursor=pointer]: Previous slide
+        - button "Next slide" [ref=e112] [cursor=pointer]:
+          - generic [ref=e113] [cursor=pointer]:
+            - generic [ref=e114] [cursor=pointer]: Next slide
+            - img [ref=e115] [cursor=pointer]
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - heading "Our Core Services" [level=2] [ref=e120]
+          - paragraph [ref=e121]: Comprehensive solutions designed to advance healthcare innovation and improve patient outcomes
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - generic [ref=e124]:
+              - img [ref=e126]
+              - generic [ref=e136]: Strategic Consulting
+            - generic [ref=e137]:
+              - generic [ref=e138]: Expert guidance on healthcare technology adoption, digital transformation, and organizational development.
+              - link "Learn More →" [ref=e139] [cursor=pointer]:
+                - /url: /services
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - img [ref=e143]
+              - generic [ref=e145]: Implementation
+            - generic [ref=e146]:
+              - generic [ref=e147]: Full-service implementation support for healthcare platforms, EHR systems, and technology solutions.
+              - link "Learn More →" [ref=e148] [cursor=pointer]:
+                - /url: /services
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - img [ref=e152]
+              - generic [ref=e155]: Research Services
+            - generic [ref=e156]:
+              - generic [ref=e157]: Clinical trial management, data analytics, regulatory compliance, and evidence-based research solutions.
+              - link "Learn More →" [ref=e158] [cursor=pointer]:
+                - /url: /research
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - img [ref=e162]
+              - generic [ref=e167]: Healthcare Partners
+            - generic [ref=e168]:
+              - generic [ref=e169]: Collaborative partnerships with healthcare organizations, technology providers, and research institutions.
+              - link "Learn More →" [ref=e170] [cursor=pointer]:
+                - /url: /partners
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - heading "What We Do" [level=2] [ref=e174]
+          - paragraph [ref=e175]: HM Healthcare Partners is a leading healthcare technology consultancy and contract research organization (CRO) dedicated to transforming patient outcomes through innovative solutions and evidence-based research.
+        - generic [ref=e176]:
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - img [ref=e180]
+              - generic [ref=e184]:
+                - heading "Healthcare Technology Consultancy" [level=3] [ref=e185]
+                - paragraph [ref=e186]: We provide strategic guidance and implementation support for healthcare organizations adopting new technologies, optimizing workflows, and improving patient care delivery.
+            - generic [ref=e187]:
+              - img [ref=e189]
+              - generic [ref=e191]:
+                - heading "Contract Research Organization" [level=3] [ref=e192]
+                - paragraph [ref=e193]: Our CRO services encompass clinical trial management, data analytics, regulatory compliance, and quality assurance to accelerate medical research and evidence generation.
+            - generic [ref=e194]:
+              - img [ref=e196]
+              - generic [ref=e200]:
+                - heading "Specialized Healthcare Solutions" [level=3] [ref=e201]
+                - paragraph [ref=e202]: From platform development to workforce training, we deliver comprehensive solutions tailored to meet the unique challenges of modern healthcare organizations.
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - generic [ref=e206]: 15+
+              - generic [ref=e207]: Years Experience
+            - generic [ref=e208]:
+              - generic [ref=e209]: 500+
+              - generic [ref=e210]: Healthcare Partners
+            - generic [ref=e211]:
+              - generic [ref=e212]: 100+
+              - generic [ref=e213]: Research Studies
+            - generic [ref=e214]:
+              - generic [ref=e215]: 98%
+              - generic [ref=e216]: Client Satisfaction
+      - generic [ref=e219]:
+        - img "Patient experience workshop" [ref=e222]
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e227]:
+                - img [ref=e228]
+                - text: Mobile Experience
+              - heading "Personalized Dashboard" [level=2] [ref=e230]
+              - paragraph [ref=e231]: Your health overview at a glance
+            - generic [ref=e240]: 1 of 6
+            - generic [ref=e241]:
+              - generic [ref=e242]:
+                - generic [ref=e243]:
+                  - img [ref=e245]
+                  - heading "Real-Time Sync" [level=3] [ref=e247]
+                - paragraph [ref=e248]: All health data synchronizes instantly across your care team for coordinated care.
+              - generic [ref=e249]:
+                - generic [ref=e250]:
+                  - img [ref=e252]
+                  - heading "Health Metrics" [level=3] [ref=e254]
+                - paragraph [ref=e255]: Track energy levels, heart rate, and recovery indicators in real-time.
+              - generic [ref=e256]:
+                - generic [ref=e257]:
+                  - img [ref=e259]
+                  - heading "AI Care Insights" [level=3] [ref=e261]
+                - paragraph [ref=e262]: Personalized recommendations based on your unique health patterns and data.
+              - generic [ref=e263]:
+                - generic [ref=e264]:
+                  - img [ref=e266]
+                  - heading "Care Team Hub" [level=3] [ref=e271]
+                - paragraph [ref=e272]: Connect with your entire healthcare team through one unified platform.
+          - generic [ref=e274]:
+            - img
+            - generic [ref=e276]:
+              - generic [ref=e277]:
+                - generic [ref=e278]: 9:41
+                - generic [ref=e279]:
+                  - img [ref=e280]
+                  - img [ref=e284]
+                  - img [ref=e288]
+              - generic [ref=e294]:
+                - generic [ref=e295]:
+                  - img [ref=e296]
+                  - heading "Good Morning, Sarah" [level=2] [ref=e298]
+                  - paragraph [ref=e299]: Treatment Day 12 • Next appointment in 3 days
+                - generic [ref=e300]:
+                  - generic [ref=e301]:
+                    - generic [ref=e302]:
+                      - img [ref=e303]
+                      - generic [ref=e305]: Energy Level
+                    - generic [ref=e306]: 8.7/10
+                  - generic [ref=e307]:
+                    - generic [ref=e308]:
+                      - img [ref=e309]
+                      - generic [ref=e311]: Heart Rate
+                    - generic [ref=e312]:
+                      - text: "68"
+                      - generic [ref=e313]: bpm
+                - generic [ref=e314]:
+                  - generic [ref=e315]:
+                    - img [ref=e316]
+                    - heading "AI Care Insight" [level=3] [ref=e318]
+                  - paragraph [ref=e319]: Your recovery metrics are trending positively. Consider 20min walking today.
+                  - button "View Details" [ref=e320] [cursor=pointer]:
+                    - text: View Details
+                    - img [ref=e321] [cursor=pointer]
+      - generic [ref=e326]:
+        - generic [ref=e327]:
+          - generic [ref=e328]:
+            - img [ref=e329]
+            - generic [ref=e331]: Clinical Research Organization
+          - heading "Leading Healthcare Innovation" [level=2] [ref=e332]
+          - paragraph [ref=e333]: Transforming healthcare through cutting-edge research, advanced technology platforms, and comprehensive regulatory expertise.
+        - generic [ref=e334]:
+          - generic [ref=e337]:
+            - img [ref=e339]
+            - generic [ref=e342]:
+              - heading "Clinical Trial Excellence" [level=3] [ref=e343]
+              - paragraph [ref=e344]: End-to-end trial management
+              - paragraph [ref=e345]: Advanced clinical research capabilities enabling faster, more efficient trials with enhanced data quality and regulatory compliance.
+            - generic [ref=e346]:
+              - link "Explore Trials" [ref=e347] [cursor=pointer]:
+                - /url: /research/clinical-studies
+                - generic [ref=e348] [cursor=pointer]: Explore Trials
+              - link "View Capabilities" [ref=e349] [cursor=pointer]:
+                - /url: /research
+                - generic [ref=e350] [cursor=pointer]: View Capabilities
+          - generic [ref=e353]:
+            - img [ref=e355]
+            - generic [ref=e358]:
+              - heading "Digital Health Innovation" [level=3] [ref=e359]
+              - paragraph [ref=e360]: Built for Healthcare Intelligence
+              - paragraph [ref=e361]: AI-powered platform ecosystem connecting wearable devices, EHR systems, and clinical workflows for comprehensive patient insights.
+            - generic [ref=e362]:
+              - link "View Platforms" [ref=e363] [cursor=pointer]:
+                - /url: /platforms
+                - generic [ref=e364] [cursor=pointer]: View Platforms
+              - link "See Partners" [ref=e365] [cursor=pointer]:
+                - /url: /partners
+                - generic [ref=e366] [cursor=pointer]: See Partners
+          - generic [ref=e369]:
+            - img [ref=e371]
+            - generic [ref=e373]:
+              - heading "Regulatory Excellence" [level=3] [ref=e374]
+              - paragraph [ref=e375]: FDA navigation & compliance
+              - paragraph [ref=e376]: Expert regulatory guidance and validation systems ensuring smooth pathways to approval for medical devices, software, and therapeutics.
+            - generic [ref=e377]:
+              - link "Regulatory Services" [ref=e378] [cursor=pointer]:
+                - /url: /services
+                - generic [ref=e379] [cursor=pointer]: Regulatory Services
+              - link "Compliance Guide" [ref=e380] [cursor=pointer]:
+                - /url: /research/qa-qi
+                - generic [ref=e381] [cursor=pointer]: Compliance Guide
+          - generic [ref=e384]:
+            - img [ref=e386]
+            - generic [ref=e389]:
+              - heading "Advanced Analytics" [level=3] [ref=e390]
+              - paragraph [ref=e391]: AI-powered clinical intelligence
+              - paragraph [ref=e392]: Machine learning and predictive analytics transform clinical data into actionable insights for improved patient outcomes and research efficiency.
+            - generic [ref=e393]:
+              - link "Analytics Platform" [ref=e394] [cursor=pointer]:
+                - /url: /platforms
+                - generic [ref=e395] [cursor=pointer]: Analytics Platform
+              - link "View Research" [ref=e396] [cursor=pointer]:
+                - /url: /research
+                - generic [ref=e397] [cursor=pointer]: View Research
+          - generic [ref=e400]:
+            - img [ref=e402]
+            - generic [ref=e407]:
+              - heading "Personalized Dashboard" [level=3] [ref=e408]
+              - paragraph [ref=e409]: Your health overview at a glance
+              - paragraph [ref=e410]: Intuitive, customizable dashboard that presents your health metrics, appointments, and care plan in one unified view.
+            - generic [ref=e411]:
+              - link "View Demo" [ref=e412] [cursor=pointer]:
+                - /url: /platforms
+                - generic [ref=e413] [cursor=pointer]: View Demo
+              - link "Learn More" [ref=e414] [cursor=pointer]:
+                - /url: /research
+                - generic [ref=e415] [cursor=pointer]: Learn More
+          - generic [ref=e418]:
+            - img [ref=e420]
+            - generic [ref=e422]:
+              - heading "INTELLISCORE Tracking" [level=3] [ref=e423]
+              - paragraph [ref=e424]: Comprehensive health scoring system
+              - paragraph [ref=e425]: Real-time health scoring that monitors vitals, treatment adherence, and wellness indicators for proactive care management.
+            - generic [ref=e426]:
+              - link "Get Started" [ref=e427] [cursor=pointer]:
+                - /url: /contact
+                - generic [ref=e428] [cursor=pointer]: Get Started
+              - link "How It Works" [ref=e429] [cursor=pointer]:
+                - /url: /platforms
+                - generic [ref=e430] [cursor=pointer]: How It Works
+      - generic [ref=e432]:
+        - generic [ref=e433]:
+          - heading "Platform Capabilities" [level=2] [ref=e434]
+          - paragraph [ref=e435]: Discover the innovative features that revolutionize healthcare delivery and patient outcomes
+        - generic [ref=e436]:
+          - generic [ref=e437]:
+            - generic [ref=e438]:
+              - img [ref=e440]
+              - generic [ref=e450]: Clinical Decision Support
+            - generic [ref=e452]: AI-powered insights that help healthcare professionals make informed decisions at the point of care.
+          - generic [ref=e453]:
+            - generic [ref=e454]:
+              - img [ref=e456]
+              - generic [ref=e458]: Patient Engagement
+            - generic [ref=e460]: Tools that empower patients to take an active role in their healthcare journey and outcomes.
+          - generic [ref=e461]:
+            - generic [ref=e462]:
+              - img [ref=e464]
+              - generic [ref=e466]: Data Analytics
+            - generic [ref=e468]: Advanced analytics that transform healthcare data into actionable insights for better outcomes.
+          - generic [ref=e469]:
+            - generic [ref=e470]:
+              - img [ref=e472]
+              - generic [ref=e475]: Electronic Health Records
+            - generic [ref=e477]: Comprehensive EHR management with real-time data synchronization and clinical workflows.
+          - generic [ref=e478]:
+            - generic [ref=e479]:
+              - img [ref=e481]
+              - generic [ref=e483]: Telehealth Integration
+            - generic [ref=e485]: Secure video consultations and remote monitoring platforms for expanded care access.
+          - generic [ref=e486]:
+            - generic [ref=e487]:
+              - img [ref=e489]
+              - generic [ref=e493]: Interoperability Standards
+            - generic [ref=e495]: FHIR-compliant data exchange ensuring seamless connectivity between healthcare systems.
+      - generic [ref=e498]:
+        - generic [ref=e499]:
+          - generic [ref=e500]: Our Platforms
+          - heading "Innovative Digital Health Platforms" [level=2] [ref=e501]
+          - paragraph [ref=e502]: Our cutting-edge platforms are designed to transform healthcare delivery and improve patient outcomes
+        - generic [ref=e503]:
+          - generic [ref=e504]:
+            - img "IntelliC Health Platform" [ref=e508]
+            - generic [ref=e511]:
+              - heading "IntelliC Health Platform" [level=3] [ref=e512]
+              - paragraph [ref=e513]: Comprehensive patient management system with integrated analytics and clinical decision support.
+              - generic [ref=e515]:
+                - generic [ref=e516]:
+                  - button "Feature 1" [ref=e517] [cursor=pointer]
+                  - button "Feature 2" [ref=e518] [cursor=pointer]
+                  - button "Feature 3" [ref=e519] [cursor=pointer]
+                - generic [ref=e520]:
+                  - img [ref=e522]
+                  - heading "Analytics Dashboard" [level=4] [ref=e524]
+                  - paragraph [ref=e525]: Real-time insights into clinical operations and patient outcomes.
+              - link "Learn more about IntelliC Health Platform" [ref=e527] [cursor=pointer]:
+                - /url: /platforms/intellic
+                - generic [ref=e528] [cursor=pointer]:
+                  - text: Learn more about IntelliC Health Platform
+                  - img [ref=e530] [cursor=pointer]
+          - generic [ref=e532]:
+            - button "Previous platform" [ref=e533] [cursor=pointer]:
+              - img [ref=e534] [cursor=pointer]
+            - generic [ref=e536]:
+              - button "Platform 1" [ref=e537] [cursor=pointer]
+              - button "Platform 2" [ref=e538] [cursor=pointer]
+              - button "Platform 3" [ref=e539] [cursor=pointer]
+            - button "Next platform" [ref=e540] [cursor=pointer]:
+              - img [ref=e541] [cursor=pointer]
+      - generic [ref=e544]:
+        - generic [ref=e545]:
+          - heading "Latest Research Insights" [level=2] [ref=e546]
+          - paragraph [ref=e547]: Stay informed with the latest breakthroughs in healthcare technology and clinical research
+        - generic [ref=e548]:
+          - generic [ref=e549]:
+            - img [ref=e551]
+            - generic [ref=e554]:
+              - generic [ref=e555]: "AI-Powered Clinical Decision Support: Transforming Patient Care"
+              - generic [ref=e556]:
+                - generic [ref=e557]: Dr. Sarah Martinez
+                - generic [ref=e558]: •
+                - generic [ref=e559]: 8 min read
+            - generic [ref=e560]:
+              - generic [ref=e561]: Explore how artificial intelligence is revolutionizing clinical decision-making, improving diagnostic accuracy, and enhancing patient outcomes across healthcare systems.
+              - link "Read More" [ref=e562] [cursor=pointer]:
+                - /url: /blog/ai-clinical-decision-support-2024
+                - text: Read More
+                - img [ref=e563] [cursor=pointer]
+          - generic [ref=e565]:
+            - img [ref=e567]
+            - generic [ref=e570]:
+              - generic [ref=e571]: "The Future of Telehealth: Beyond the Pandemic"
+              - generic [ref=e572]:
+                - generic [ref=e573]: Dr. Michael Chen
+                - generic [ref=e574]: •
+                - generic [ref=e575]: 6 min read
+            - generic [ref=e576]:
+              - generic [ref=e577]: As healthcare continues to evolve post-pandemic, telehealth platforms are becoming integral to comprehensive patient care strategies.
+              - link "Read More" [ref=e578] [cursor=pointer]:
+                - /url: /blog/telehealth-future-2024
+                - text: Read More
+                - img [ref=e579] [cursor=pointer]
+          - generic [ref=e581]:
+            - img [ref=e583]
+            - generic [ref=e586]:
+              - generic [ref=e587]: "Digital Transformation in Clinical Trials: A 2024 Perspective"
+              - generic [ref=e588]:
+                - generic [ref=e589]: Dr. Elena Rodriguez
+                - generic [ref=e590]: •
+                - generic [ref=e591]: 10 min read
+            - generic [ref=e592]:
+              - generic [ref=e593]: How modern clinical trial management platforms are accelerating research timelines and improving data quality across the pharmaceutical industry.
+              - link "Read More" [ref=e594] [cursor=pointer]:
+                - /url: /blog/clinical-trial-digital-transformation
+                - text: Read More
+                - img [ref=e595] [cursor=pointer]
+        - link "View All Articles" [ref=e598] [cursor=pointer]:
+          - /url: /blog
+          - generic [ref=e599] [cursor=pointer]: View All Articles
+      - generic [ref=e601]:
+        - generic [ref=e602]:
+          - heading "Trusted Healthcare Partners" [level=2] [ref=e603]
+          - paragraph [ref=e604]: Collaborating with industry leaders to transform healthcare delivery
+        - generic [ref=e605]:
+          - generic [ref=e607]: INTELLIC Health
+          - generic [ref=e609]: The Mateka Group
+          - generic [ref=e611]: Peregrine Medical Press
+          - generic [ref=e613]: Precognitive Health
+      - generic [ref=e615]:
+        - heading "Ready to Transform Healthcare Together?" [level=2] [ref=e616]
+        - paragraph [ref=e617]: Join leading healthcare organizations in revolutionizing patient care through innovative technology solutions.
+        - generic [ref=e618]:
+          - link "Start Your Clinical Trial" [ref=e619] [cursor=pointer]:
+            - /url: /contact
+            - generic [ref=e620] [cursor=pointer]: Start Your Clinical Trial
+          - link "Learn About Us" [ref=e621] [cursor=pointer]:
+            - /url: /about
+            - generic [ref=e622] [cursor=pointer]: Learn About Us
+  - contentinfo [ref=e623]:
+    - generic [ref=e624]:
+      - generic [ref=e625]:
+        - generic [ref=e627]:
+          - heading "HM Healthcare Partners" [level=3] [ref=e628]
+          - paragraph [ref=e629]: HM Healthcare Partners is a leading healthcare technology consultancy and contract research organization dedicated to transforming patient outcomes through innovative solutions.
+          - generic [ref=e630]:
+            - link "linkedin" [ref=e631] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/hm-healthcare-partners/
+              - img [ref=e632] [cursor=pointer]
+              - generic [ref=e636] [cursor=pointer]: linkedin
+            - link "twitter" [ref=e637] [cursor=pointer]:
+              - /url: https://twitter.com/hmhealthcare
+              - img [ref=e638] [cursor=pointer]
+              - generic [ref=e640] [cursor=pointer]: twitter
+        - generic [ref=e641]:
+          - heading "Company" [level=3] [ref=e642]
+          - list [ref=e643]:
+            - listitem [ref=e644]:
+              - link "About Us" [ref=e645] [cursor=pointer]:
+                - /url: /about
+                - img [ref=e646] [cursor=pointer]
+                - text: About Us
+            - listitem [ref=e648]:
+              - link "Partners" [ref=e649] [cursor=pointer]:
+                - /url: /partners
+                - img [ref=e650] [cursor=pointer]
+                - text: Partners
+            - listitem [ref=e652]:
+              - link "Careers" [ref=e653] [cursor=pointer]:
+                - /url: /careers
+                - img [ref=e654] [cursor=pointer]
+                - text: Careers
+            - listitem [ref=e656]:
+              - link "Contact" [ref=e657] [cursor=pointer]:
+                - /url: /contact
+                - img [ref=e658] [cursor=pointer]
+                - text: Contact
+        - generic [ref=e660]:
+          - heading "Services" [level=3] [ref=e661]
+          - list [ref=e662]:
+            - listitem [ref=e663]:
+              - link "Strategic Consulting" [ref=e664] [cursor=pointer]:
+                - /url: /services/strategic-consulting
+                - img [ref=e665] [cursor=pointer]
+                - text: Strategic Consulting
+            - listitem [ref=e667]:
+              - link "Implementation" [ref=e668] [cursor=pointer]:
+                - /url: /services/implementation
+                - img [ref=e669] [cursor=pointer]
+                - text: Implementation
+            - listitem [ref=e671]:
+              - link "Quality Improvement" [ref=e672] [cursor=pointer]:
+                - /url: /research/qa-qi
+                - img [ref=e673] [cursor=pointer]
+                - text: Quality Improvement
+            - listitem [ref=e675]:
+              - link "Research" [ref=e676] [cursor=pointer]:
+                - /url: /research
+                - img [ref=e677] [cursor=pointer]
+                - text: Research
+        - generic [ref=e679]:
+          - heading "Resources" [level=3] [ref=e680]
+          - list [ref=e681]:
+            - listitem [ref=e682]:
+              - link "Blog" [ref=e683] [cursor=pointer]:
+                - /url: /blog
+                - img [ref=e684] [cursor=pointer]
+                - text: Blog
+            - listitem [ref=e686]:
+              - link "Clinical Studies" [ref=e687] [cursor=pointer]:
+                - /url: /research/clinical-studies
+                - img [ref=e688] [cursor=pointer]
+                - text: Clinical Studies
+            - listitem [ref=e690]:
+              - link "Publications" [ref=e691] [cursor=pointer]:
+                - /url: /research/publications
+                - img [ref=e692] [cursor=pointer]
+                - text: Publications
+            - listitem [ref=e694]:
+              - link "Platforms" [ref=e695] [cursor=pointer]:
+                - /url: /platforms
+                - img [ref=e696] [cursor=pointer]
+                - text: Platforms
+        - generic [ref=e698]:
+          - heading "Contact Us" [level=3] [ref=e699]
+          - list [ref=e700]:
+            - listitem [ref=e701]:
+              - img [ref=e702]
+              - link "info@hm-hcp.com" [ref=e705] [cursor=pointer]:
+                - /url: mailto:info@hm-hcp.com
+            - listitem [ref=e706]:
+              - img [ref=e707]
+              - link "(312) 985-9300" [ref=e709] [cursor=pointer]:
+                - /url: tel:(312) 985-9300
+            - listitem [ref=e710]:
+              - img [ref=e711]
+              - generic [ref=e714]: "Offices in: Ft. Lauderdale, FL & Chicago, IL"
+      - button "Accessibility" [ref=e716] [cursor=pointer]:
+        - img [ref=e717] [cursor=pointer]
+        - generic [ref=e720] [cursor=pointer]: Accessibility
+      - generic [ref=e722]:
+        - generic [ref=e723]: © 2025 HM Healthcare Partners. All rights reserved.
+        - generic [ref=e724]:
+          - link "Privacy Policy" [ref=e725] [cursor=pointer]:
+            - /url: /privacy-policy
+          - link "Terms of Service" [ref=e726] [cursor=pointer]:
+            - /url: /terms-of-service
+          - link "Cookie Policy" [ref=e727] [cursor=pointer]:
+            - /url: /cookie-policy
+          - link "Accessibility" [ref=e728] [cursor=pointer]:
+            - /url: /accessibility
+  - region "Notifications (F8)":
+    - list
+```

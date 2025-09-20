@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 import { groupBy, orderBy, uniqBy } from 'lodash';

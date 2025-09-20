@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as tf from '@tensorflow/tfjs-node';
+import { Matrix } from 'ml-matrix';
+import { SVM } from 'ml-regression';
 import { subDays } from 'date-fns';
 import { 
   PlacementOptimization,
@@ -9,7 +10,7 @@ import {
 
 export class PlacementEngine {
   private supabase: SupabaseClient;
-  private clickModel: tf.Sequential | null = null;
+  private clickModel: SVM | null = null;
   private positionBiasFactors: Map<number, number> = new Map();
 
   constructor(supabaseUrl: string, supabaseKey: string) {
@@ -319,51 +320,12 @@ export class PlacementEngine {
       labels.push(record.clicked ? 1 : 0);
     }
 
-    // Create and train model
-    const xTrain = tf.tensor2d(features);
-    const yTrain = tf.tensor1d(labels);
-
-    this.clickModel = tf.sequential({
-      layers: [
-        tf.layers.dense({
-          inputShape: [6],
-          units: 32,
-          activation: 'relu'
-        }),
-        tf.layers.dropout({ rate: 0.2 }),
-        tf.layers.dense({
-          units: 16,
-          activation: 'relu'
-        }),
-        tf.layers.dense({
-          units: 1,
-          activation: 'sigmoid'
-        })
-      ]
+    // Create and train SVM model
+    this.clickModel = new SVM(features, labels, {
+      kernel: 'rbf',
+      gamma: 0.5,
+      C: 1
     });
-
-    this.clickModel.compile({
-      optimizer: tf.train.adam(0.001),
-      loss: 'binaryCrossentropy',
-      metrics: ['accuracy']
-    });
-
-    await this.clickModel.fit(xTrain, yTrain, {
-      epochs: 50,
-      batchSize: 32,
-      validationSplit: 0.2,
-      callbacks: {
-        onEpochEnd: (epoch, logs) => {
-          if (epoch % 10 === 0) {
-            console.log(`Epoch ${epoch}: loss=${logs?.loss?.toFixed(4)}`);
-          }
-        }
-      }
-    });
-
-    // Cleanup
-    xTrain.dispose();
-    yTrain.dispose();
 
     console.log('Click model training completed');
   }
@@ -407,13 +369,8 @@ export class PlacementEngine {
       new Date().getHours() / 24
     ];
 
-    const input = tf.tensor2d([features]);
-    const prediction = this.clickModel.predict(input) as tf.Tensor;
-    const ctr = (await prediction.data())[0];
-
-    // Cleanup
-    input.dispose();
-    prediction.dispose();
+    // Use SVM for prediction
+    const ctr = this.clickModel ? this.clickModel.predict([features])[0] : 0.02;
 
     return ctr;
   }

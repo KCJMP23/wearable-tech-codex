@@ -7,8 +7,15 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-[#f8f6f2] text-neutral-900;
+  overflow-x: hidden;
+  position: relative;
 }
 
 a {

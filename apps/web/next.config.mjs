@@ -22,7 +22,7 @@ const nextConfig = {
     // Enable tree shaking
     config.optimization = {
       ...config.optimization,
-      usedExports: true,
+      // Remove usedExports as it conflicts with Next.js caching
       sideEffects: false,
       
       // Code splitting optimizations
