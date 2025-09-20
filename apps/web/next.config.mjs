@@ -19,6 +19,14 @@ const nextConfig = {
   
   // Webpack optimizations
   webpack: (config, { isServer }) => {
+    // Fix "exports is not defined" error
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false,
+      },
+    });
+
     // Fix for rate-limiter-flexible TypeScript definitions
     config.module.rules.push({
       test: /\.d\.ts$/,
@@ -34,6 +42,13 @@ const nextConfig = {
         net: false,
         tls: false,
         child_process: false,
+        module: false,
+      };
+      
+      // Fix exports issue
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'exports': false,
       };
     }
     
@@ -93,6 +108,8 @@ const nextConfig = {
   experimental: {
     // Enable optimizeCss for smaller CSS bundles
     optimizeCss: true,
+    // Fix for exports error in Next.js 15
+    esmExternals: 'loose',
   },
   
   // Headers for caching and security

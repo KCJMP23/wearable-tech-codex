@@ -1,0 +1,33 @@
+# Railway Configuration for AffiliateOS
+
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install --frozen-lockfile && pnpm build"
+
+[deploy]
+startCommand = "cd apps/web && pnpm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Environment-specific settings
+[[environments]]
+name = "production"
+numReplicas = 2
+region = "us-west1"
+
+[[environments]]
+name = "staging"
+numReplicas = 1
+region = "us-west1"
+
+# Service dependencies
+[services]
+  [services.database]
+  type = "postgres"
+  version = "14"
+  
+  [services.redis]
+  type = "redis"
+  version = "7"

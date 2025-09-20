@@ -1,11 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
+import Script from 'next/script';
 import { ThemeProvider } from '../components/ThemeProvider';
 import { ChatbotDock } from './components/ChatbotDock';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { QueryProvider } from '../providers/QueryProvider';
 import { ConsoleErrorSuppressor } from '../components/ConsoleErrorSuppressor';
+import { ClientWrapper } from '../components/ClientWrapper';
 import { preloadingConfig } from '../config/performance';
 
 export const metadata: Metadata = {
@@ -24,6 +26,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* Fix exports is not defined error */}
+        <script src="/exports-polyfill.js" />
+        
         {/* Preconnect to critical origins */}
         {preloadingConfig.preconnect.map((link) => (
           <link
@@ -53,14 +58,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="antialiased">
         <ConsoleErrorSuppressor />
-        <ErrorBoundary>
-          <QueryProvider>
-            <ThemeProvider>
-              {children}
-              <ChatbotDock />
-            </ThemeProvider>
-          </QueryProvider>
-        </ErrorBoundary>
+        <ClientWrapper>
+          <ErrorBoundary>
+            <QueryProvider>
+              <ThemeProvider>
+                {children}
+                <ChatbotDock />
+              </ThemeProvider>
+            </QueryProvider>
+          </ErrorBoundary>
+        </ClientWrapper>
       </body>
     </html>
   );
