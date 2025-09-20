@@ -1,0 +1,68 @@
+{
+  "id": "seo-optimizer",
+  "name": "SEO Optimizer Pro",
+  "version": "1.0.0",
+  "description": "Advanced SEO optimization with meta tags, sitemaps, and schema markup",
+  "author": "AffiliateOS",
+  "category": "seo",
+  "tags": ["seo", "meta", "sitemap", "schema", "optimization"],
+  "icon": "🔍",
+  "main": "index.js",
+  "permissions": [
+    "read:posts",
+    "write:posts",
+    "read:products",
+    "write:products",
+    "read:settings",
+    "write:settings"
+  ],
+  "hooks": [
+    {
+      "name": "post.beforeSave",
+      "type": "filter",
+      "priority": 10
+    },
+    {
+      "name": "product.beforeDisplay",
+      "type": "filter",
+      "priority": 10
+    }
+  ],
+  "settings": {
+    "autoGenerateMeta": {
+      "type": "boolean",
+      "label": "Auto-generate meta descriptions",
+      "description": "Automatically create meta descriptions from content",
+      "default": true
+    },
+    "metaDescriptionLength": {
+      "type": "number",
+      "label": "Meta description length",
+      "description": "Maximum characters for meta descriptions",
+      "default": 160,
+      "validation": {
+        "min": 120,
+        "max": 320
+      }
+    },
+    "enableSchema": {
+      "type": "boolean",
+      "label": "Enable Schema.org markup",
+      "description": "Add structured data to pages",
+      "default": true
+    },
+    "schemaType": {
+      "type": "select",
+      "label": "Default schema type",
+      "description": "Default schema.org type for products",
+      "default": "Product",
+      "options": [
+        { "value": "Product", "label": "Product" },
+        { "value": "Article", "label": "Article" },
+        { "value": "Review", "label": "Review" },
+        { "value": "AggregateRating", "label": "Aggregate Rating" }
+      ]
+    }
+  },
+  "minVersion": "1.0.0"
+}

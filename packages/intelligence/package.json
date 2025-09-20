@@ -1,0 +1,21 @@
+{
+  "name": "@affiliate-factory/intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@affiliate-factory/sdk": "workspace:*",
+    "@supabase/supabase-js": "^2.39.1",
+    "@tensorflow/tfjs": "^4.15.0",
+    "brain.js": "2.0.0-beta.24",
+    "date-fns": "^3.0.0",
+    "lodash": "^4.17.21",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "typescript": "^5.3.0"
+  }
+}

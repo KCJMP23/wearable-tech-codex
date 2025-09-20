@@ -70,22 +70,6 @@ const nextConfig = {
   experimental: {
     // Enable optimizeCss for smaller CSS bundles
     optimizeCss: true,
-    
-    // Partial Prerendering for faster initial loads
-    ppr: true,
-    
-    // Server Components optimizations
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-    
-    // Turbopack for faster builds (if available)
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   
   // Headers for caching and security
@@ -159,14 +143,8 @@ const nextConfig = {
   // Output configuration
   output: 'standalone',
   
-  // SWC minification for better performance
-  swcMinify: true,
-  
   // Module ID strategy for long-term caching
   productionBrowserSourceMaps: false,
-  
-  // Optimize font loading
-  optimizeFonts: true,
 };
 
 export default nextConfig;

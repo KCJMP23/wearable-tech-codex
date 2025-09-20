@@ -179,7 +179,7 @@ export default function RegisterScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.content}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join Wearable Tech Codex and start building your affiliate empire</Text>
+            <Text style={styles.subtitle}>Join AffiliateOS and start building your affiliate empire</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Full Name</Text>

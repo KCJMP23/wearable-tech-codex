@@ -369,5 +369,6 @@ export default function FlexibleOnboardingPage() {
         </div>
       </div>
     </div>
+                </Card>
   );
 }

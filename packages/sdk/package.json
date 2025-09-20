@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@affiliate-factory/blockchain": "workspace:*",
+    "@affiliate-factory/integrations": "workspace:*",
     "@anthropic-ai/sdk": "^0.21.0",
     "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.1",

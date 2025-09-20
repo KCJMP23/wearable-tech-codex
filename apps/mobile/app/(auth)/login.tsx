@@ -163,7 +163,7 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your Wearable Tech Codex account</Text>
+          <Text style={styles.subtitle}>Sign in to your AffiliateOS account</Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>

@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "tenants": {
+      "$tenantId": {
+        ".read": "auth != null && auth.uid == $tenantId",
+        ".write": "auth != null && auth.uid == $tenantId"
+      }
+    },
+    "analytics": {
+      "$tenantId": {
+        ".read": "auth != null && auth.uid == $tenantId",
+        ".write": false
+      }
+    },
+    "notifications": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    }
+  }
+}

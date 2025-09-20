@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,28 +11,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
+import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../src/providers/ThemeProvider';
-import { useAppSelector } from '../../src/store';
-import { useSites, useAnalytics } from '../../src/hooks/useApi';
+import { useAuth } from '../../src/providers/AuthProvider';
+import { sitesApi, analyticsApi } from '../../src/services/api';
+import { LoadingSpinner } from '../../src/components/common/LoadingSpinner';
 import { router } from 'expo-router';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
-  const { selectedTenant } = useAppSelector(state => state.app);
-  const { sites, isLoading: sitesLoading, refetch: refetchSites } = useSites();
-  const { analytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = useAnalytics();
+  const { user } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Select first site if none selected
-  useEffect(() => {
-    if (!selectedTenant && sites.length > 0) {
-      // Dispatch action to select first site
-    }
-  }, [sites, selectedTenant]);
+  const {
+    data: sites = [],
+    isLoading: sitesLoading,
+    refetch: refetchSites,
+  } = useQuery({
+    queryKey: ['sites', user?.id],
+    queryFn: () => sitesApi.getUserSites(user?.id!),
+    enabled: !!user?.id,
+  });
+
+  const {
+    data: analytics,
+    isLoading: analyticsLoading,
+    refetch: refetchAnalytics,
+  } = useQuery({
+    queryKey: ['analytics', user?.id, '30d'],
+    queryFn: () => analyticsApi.getAnalytics(user?.id!, '30d'),
+    enabled: !!user?.id,
+  });
 
   const handleRefresh = async () => {
+    setRefreshing(true);
     await Promise.all([refetchSites(), refetchAnalytics()]);
+    setRefreshing(false);
   };
 
   const formatCurrency = (value: number) => {
@@ -53,12 +69,10 @@ export default function DashboardScreen() {
   };
 
   const revenueData = {
-    labels: analytics?.trends.revenue.slice(-7).map(item => 
-      new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    ) || [],
+    labels: analytics?.revenueChart?.labels || [],
     datasets: [
       {
-        data: analytics?.trends.revenue.slice(-7).map(item => item.value) || [0],
+        data: analytics?.revenueChart?.data || [0],
         color: (opacity = 1) => `rgba(52, 199, 89, ${opacity})`,
         strokeWidth: 2,
       },
@@ -214,6 +228,22 @@ export default function DashboardScreen() {
       fontSize: 16,
       fontWeight: '600',
     },
+    rankBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    rankText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    conversionRate: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
   });
 
   if (sites.length === 0) {
@@ -221,7 +251,7 @@ export default function DashboardScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Dashboard</Text>
-          <Text style={styles.headerSubtitle}>Welcome to Wearable Tech Codex</Text>
+          <Text style={styles.headerSubtitle}>Welcome to AffiliateOS</Text>
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="globe-outline" size={64} color={colors.textSecondary} />
@@ -244,7 +274,7 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dashboard</Text>
         <Text style={styles.headerSubtitle}>
-          {selectedTenant?.name || 'Select a site to view analytics'}
+          {sites.length > 0 ? `Managing ${sites.length} site${sites.length > 1 ? 's' : ''}` : 'Getting started'}
         </Text>
       </View>
 
@@ -253,73 +283,93 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContainer}
         refreshControl={
           <RefreshControl
-            refreshing={sitesLoading || analyticsLoading}
+            refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={colors.primary}
           />
         }
       >
-        {analytics && (
+        {(sitesLoading || analyticsLoading) ? (
+          <LoadingSpinner text="Loading dashboard..." />
+        ) : (
           <>
-            <View style={styles.metricsGrid}>
-              <View style={styles.metricCard}>
-                <Ionicons name="cash-outline" size={24} color={colors.success} style={styles.metricIcon} />
-                <Text style={styles.metricValue}>
-                  {formatCurrency(analytics.overview.total_revenue)}
-                </Text>
-                <Text style={styles.metricLabel}>Total Revenue</Text>
-              </View>
+            {analytics && (
+              <>
+                <View style={styles.metricsGrid}>
+                  <View style={styles.metricCard}>
+                    <Ionicons name="cash-outline" size={24} color={colors.success} style={styles.metricIcon} />
+                    <Text style={styles.metricValue}>
+                      {analytics.totalRevenue}
+                    </Text>
+                    <Text style={styles.metricLabel}>Total Revenue</Text>
+                  </View>
 
-              <View style={styles.metricCard}>
-                <Ionicons name="trending-up-outline" size={24} color={colors.primary} style={styles.metricIcon} />
-                <Text style={styles.metricValue}>{analytics.overview.total_clicks}</Text>
-                <Text style={styles.metricLabel}>Total Clicks</Text>
-              </View>
+                  <View style={styles.metricCard}>
+                    <Ionicons name="trending-up-outline" size={24} color={colors.primary} style={styles.metricIcon} />
+                    <Text style={styles.metricValue}>{analytics.totalVisits}</Text>
+                    <Text style={styles.metricLabel}>Total Visits</Text>
+                  </View>
 
-              <View style={styles.metricCard}>
-                <Ionicons name="stats-chart-outline" size={24} color={colors.accent} style={styles.metricIcon} />
-                <Text style={styles.metricValue}>
-                  {analytics.overview.conversion_rate.toFixed(1)}%
-                </Text>
-                <Text style={styles.metricLabel}>Conversion Rate</Text>
-              </View>
+                  <View style={styles.metricCard}>
+                    <Ionicons name="stats-chart-outline" size={24} color={colors.accent} style={styles.metricIcon} />
+                    <Text style={styles.metricValue}>
+                      {analytics.conversionRate}
+                    </Text>
+                    <Text style={styles.metricLabel}>Conversion Rate</Text>
+                  </View>
 
-              <View style={styles.metricCard}>
-                <Ionicons name="wallet-outline" size={24} color={colors.warning} style={styles.metricIcon} />
-                <Text style={styles.metricValue}>
-                  {formatCurrency(analytics.overview.avg_order_value)}
-                </Text>
-                <Text style={styles.metricLabel}>Avg Order Value</Text>
-              </View>
-            </View>
+                  <View style={styles.metricCard}>
+                    <Ionicons name="wallet-outline" size={24} color={colors.warning} style={styles.metricIcon} />
+                    <Text style={styles.metricValue}>
+                      {analytics.avgOrderValue}
+                    </Text>
+                    <Text style={styles.metricLabel}>Avg Order Value</Text>
+                  </View>
+                </View>
 
-            {revenueData.labels.length > 0 && (
-              <View style={styles.chartCard}>
-                <Text style={styles.chartTitle}>Revenue Trend (7 days)</Text>
-                <LineChart
-                  data={revenueData}
-                  width={screenWidth - 72}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={{
-                    borderRadius: 8,
-                  }}
-                />
-              </View>
+                {revenueData.labels.length > 0 && (
+                  <View style={styles.chartCard}>
+                    <Text style={styles.chartTitle}>Revenue Trend (7 days)</Text>
+                    <LineChart
+                      data={revenueData}
+                      width={screenWidth - 72}
+                      height={220}
+                      chartConfig={chartConfig}
+                      bezier
+                      style={{
+                        borderRadius: 8,
+                      }}
+                    />
+                  </View>
+                )}
+              </>
             )}
-          </>
-        )}
 
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionGrid}>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push('/sites')}
+              onPress={() => router.push('/site/create')}
             >
               <Ionicons name="add-circle-outline" size={32} color={colors.primary} style={styles.actionIcon} />
               <Text style={styles.actionText}>Create New Site</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/products')}
+            >
+              <Ionicons name="cube-outline" size={32} color={colors.success} style={styles.actionIcon} />
+              <Text style={styles.actionText}>Manage Products</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/content/create')}
+            >
+              <Ionicons name="document-text-outline" size={32} color={colors.warning} style={styles.actionIcon} />
+              <Text style={styles.actionText}>Create Content</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -329,53 +379,32 @@ export default function DashboardScreen() {
               <Ionicons name="analytics-outline" size={32} color={colors.accent} style={styles.actionIcon} />
               <Text style={styles.actionText}>View Analytics</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/notifications')}
-            >
-              <Ionicons name="notifications-outline" size={32} color={colors.warning} style={styles.actionIcon} />
-              <Text style={styles.actionText}>Check Alerts</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/profile')}
-            >
-              <Ionicons name="settings-outline" size={32} color={colors.textSecondary} style={styles.actionIcon} />
-              <Text style={styles.actionText}>Settings</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {analytics?.recent_activity && analytics.recent_activity.length > 0 && (
-          <View style={styles.recentActivity}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            {analytics.recent_activity.slice(0, 5).map((activity, index) => (
-              <View key={activity.id || index} style={styles.activityItem}>
-                <Ionicons
-                  name={
-                    activity.type === 'revenue' ? 'cash-outline' :
-                    activity.type === 'traffic' ? 'trending-up-outline' :
-                    'information-circle-outline'
-                  }
-                  size={24}
-                  color={
-                    activity.type === 'revenue' ? colors.success :
-                    activity.type === 'traffic' ? colors.primary :
-                    colors.textSecondary
-                  }
-                  style={styles.activityIcon}
-                />
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{activity.headline}</Text>
-                  <Text style={styles.activityTime}>
-                    {new Date(activity.timestamp).toLocaleDateString()}
-                  </Text>
-                </View>
+            {/* Top Sites Section */}
+            {analytics?.topSites && analytics.topSites.length > 0 && (
+              <View style={styles.recentActivity}>
+                <Text style={styles.sectionTitle}>Top Performing Sites</Text>
+                {analytics.topSites.slice(0, 3).map((site, index) => (
+                  <View key={site.id} style={styles.activityItem}>
+                    <View style={[styles.rankBadge, { backgroundColor: colors.primary + '20' }]}>
+                      <Text style={[styles.rankText, { color: colors.primary }]}>#{index + 1}</Text>
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityTitle}>{site.name}</Text>
+                      <Text style={styles.activityTime}>
+                        {site.revenue} revenue • {site.visits} visits
+                      </Text>
+                    </View>
+                    <Text style={[styles.conversionRate, { color: colors.success }]}>
+                      {site.conversionRate}%
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

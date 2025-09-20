@@ -1,12 +1,31 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Config } from '../constants';
-import { ApiResponse, PaginatedResponse } from '../types';
+import { Site, CreateSiteRequest, UpdateSiteRequest } from '../types/site';
+import { Notification } from '../types/notification';
+import { AnalyticsData } from '../types/analytics';
+
+// Types
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  success: boolean;
+}
 
 // Create axios instance
 const api = axios.create({
-  baseURL: Config.API_URL,
-  timeout: Config.API_TIMEOUT,
+  baseURL: process.env.EXPO_PUBLIC_API_URL || 'https://api.affiliateos.com',
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -48,12 +67,11 @@ export const authApi = {
     return response.data;
   },
   
-  register: async (email: string, password: string, firstName: string, lastName: string): Promise<ApiResponse<any>> => {
+  register: async (email: string, password: string, name: string): Promise<ApiResponse<any>> => {
     const response = await api.post('/auth/register', { 
       email, 
       password, 
-      firstName, 
-      lastName 
+      name
     });
     return response.data;
   },
@@ -63,8 +81,8 @@ export const authApi = {
     return response.data;
   },
   
-  resetPassword: async (token: string, password: string): Promise<ApiResponse<any>> => {
-    const response = await api.post('/auth/reset-password', { token, password });
+  resetPassword: async (email: string): Promise<ApiResponse<any>> => {
+    const response = await api.post('/auth/reset-password', { email });
     return response.data;
   },
   
@@ -103,22 +121,27 @@ export const userApi = {
 
 // Sites endpoints
 export const sitesApi = {
-  getSites: async (page = 1, limit = 10): Promise<PaginatedResponse<any>> => {
+  getUserSites: async (userId: string): Promise<Site[]> => {
+    const response = await api.get(`/mobile/users/${userId}/sites`);
+    return response.data.data || [];
+  },
+  
+  getSites: async (page = 1, limit = 10): Promise<PaginatedResponse<Site>> => {
     const response = await api.get(`/mobile/sites?page=${page}&limit=${limit}`);
     return response.data;
   },
   
-  getSite: async (siteId: string): Promise<ApiResponse<any>> => {
+  getSite: async (siteId: string): Promise<ApiResponse<Site>> => {
     const response = await api.get(`/mobile/sites/${siteId}`);
     return response.data;
   },
   
-  createSite: async (data: any): Promise<ApiResponse<any>> => {
+  createSite: async (data: CreateSiteRequest): Promise<ApiResponse<Site>> => {
     const response = await api.post('/mobile/sites', data);
     return response.data;
   },
   
-  updateSite: async (siteId: string, data: any): Promise<ApiResponse<any>> => {
+  updateSite: async (siteId: string, data: UpdateSiteRequest): Promise<ApiResponse<Site>> => {
     const response = await api.put(`/mobile/sites/${siteId}`, data);
     return response.data;
   },
@@ -131,6 +154,27 @@ export const sitesApi = {
 
 // Analytics endpoints
 export const analyticsApi = {
+  getAnalytics: async (userId: string, timeRange: string): Promise<AnalyticsData> => {
+    const response = await api.get(`/mobile/users/${userId}/analytics?timeRange=${timeRange}`);
+    return response.data.data || {
+      userId,
+      timeRange,
+      totalRevenue: '$0',
+      revenueChange: '0%',
+      totalVisits: '0',
+      visitsChange: '0%',
+      conversionRate: '0%',
+      conversionChange: '0%',
+      avgOrderValue: '$0',
+      aovChange: '0%',
+      revenueChart: { labels: [], data: [] },
+      trafficChart: { labels: [], data: [] },
+      topSites: [],
+      topProducts: [],
+      revenueByCategory: [],
+    };
+  },
+  
   getDashboard: async (period = '7d'): Promise<ApiResponse<any>> => {
     const response = await api.get(`/mobile/analytics/dashboard?period=${period}`);
     return response.data;
@@ -156,11 +200,21 @@ export const productsApi = {
       ...(search && { search }),
     });
     const response = await api.get(`/mobile/products?${params}`);
-    return response.data;
+    return response.data.data || [];
   },
   
   getProduct: async (productId: string): Promise<ApiResponse<any>> => {
     const response = await api.get(`/mobile/products/${productId}`);
+    return response.data;
+  },
+  
+  updateProduct: async (productId: string, data: any): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/mobile/products/${productId}`, data);
+    return response.data;
+  },
+  
+  deleteProduct: async (productId: string): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/mobile/products/${productId}`);
     return response.data;
   },
   
@@ -172,9 +226,9 @@ export const productsApi = {
 
 // Notifications endpoints
 export const notificationsApi = {
-  getNotifications: async (page = 1, limit = 20): Promise<PaginatedResponse<any>> => {
-    const response = await api.get(`/mobile/notifications?page=${page}&limit=${limit}`);
-    return response.data;
+  getNotifications: async (userId: string, filter: 'all' | 'unread' = 'all'): Promise<Notification[]> => {
+    const response = await api.get(`/mobile/users/${userId}/notifications?filter=${filter}`);
+    return response.data.data || [];
   },
   
   markAsRead: async (notificationId: string): Promise<ApiResponse<any>> => {
@@ -182,8 +236,13 @@ export const notificationsApi = {
     return response.data;
   },
   
-  markAllAsRead: async (): Promise<ApiResponse<any>> => {
-    const response = await api.put('/mobile/notifications/read-all');
+  deleteNotification: async (notificationId: string): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/mobile/notifications/${notificationId}`);
+    return response.data;
+  },
+  
+  markAllAsRead: async (userId: string): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/mobile/users/${userId}/notifications/read-all`);
     return response.data;
   },
   

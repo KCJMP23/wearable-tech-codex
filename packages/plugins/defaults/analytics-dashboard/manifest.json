@@ -1,0 +1,66 @@
+{
+  "id": "analytics-dashboard",
+  "name": "Advanced Analytics Dashboard",
+  "version": "1.0.0",
+  "description": "Real-time analytics with conversion tracking, heatmaps, and visitor insights",
+  "author": "AffiliateOS",
+  "category": "analytics",
+  "tags": ["analytics", "tracking", "conversion", "insights", "dashboard"],
+  "icon": "📊",
+  "main": "index.js",
+  "permissions": [
+    "read:analytics",
+    "write:analytics",
+    "ui:sidebar",
+    "ui:modal",
+    "storage:local"
+  ],
+  "hooks": [
+    {
+      "name": "page.view",
+      "type": "action",
+      "priority": 5
+    },
+    {
+      "name": "product.click",
+      "type": "action",
+      "priority": 5
+    },
+    {
+      "name": "conversion.complete",
+      "type": "action",
+      "priority": 5
+    }
+  ],
+  "settings": {
+    "trackingEnabled": {
+      "type": "boolean",
+      "label": "Enable tracking",
+      "description": "Enable visitor tracking and analytics",
+      "default": true
+    },
+    "anonymizeIP": {
+      "type": "boolean",
+      "label": "Anonymize IP addresses",
+      "description": "Comply with privacy regulations",
+      "default": true
+    },
+    "cookieConsent": {
+      "type": "boolean",
+      "label": "Require cookie consent",
+      "description": "Show cookie consent banner",
+      "default": true
+    },
+    "retentionDays": {
+      "type": "number",
+      "label": "Data retention (days)",
+      "description": "How long to keep analytics data",
+      "default": 90,
+      "validation": {
+        "min": 30,
+        "max": 365
+      }
+    }
+  },
+  "minVersion": "1.0.0"
+}

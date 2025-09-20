@@ -557,6 +557,92 @@ export interface WebhookDelivery {
 }
 
 // =============================================================================
+// Site Valuation Types
+// =============================================================================
+
+export type ValuationMethod = 'revenue_multiple' | 'asset_based' | 'traffic_based' | 'comparable';
+export type ValuationConfidence = 'low' | 'medium' | 'high';
+export type TrafficSource = 'organic' | 'direct' | 'referral' | 'social' | 'paid';
+
+export interface ValuationMetrics {
+  // Revenue metrics
+  monthlyRevenue: number;
+  yearlyRevenue: number;
+  revenueGrowthRate: number; // % growth month-over-month
+  revenueConsistency: number; // 0-1 score for revenue stability
+  
+  // Traffic metrics
+  monthlyPageviews: number;
+  uniqueVisitors: number;
+  averageSessionDuration: number; // seconds
+  bounceRate: number; // 0-1
+  conversionRate: number; // 0-1
+  
+  // Content metrics
+  totalPosts: number;
+  publishingFrequency: number; // posts per month
+  averageWordCount: number;
+  contentQualityScore: number; // 0-1
+  
+  // SEO metrics
+  domainAuthority: number; // 0-100
+  backlinks: number;
+  rankingKeywords: number;
+  organicTrafficPercentage: number; // 0-1
+  
+  // Technical metrics
+  pagespeedScore: number; // 0-100
+  uptimePercentage: number; // 0-1
+  mobileOptimization: number; // 0-1
+  
+  // Business metrics
+  operatingExpenses: number; // monthly
+  timeInvestment: number; // hours per week
+  dependencyRisk: number; // 0-1 (higher = more risky)
+  diversificationScore: number; // 0-1 (higher = more diversified)
+}
+
+export interface ValuationRange {
+  low: number;
+  mid: number;
+  high: number;
+  confidence: ValuationConfidence;
+}
+
+export interface ValuationResult {
+  totalValuation: ValuationRange;
+  methodBreakdown: Record<ValuationMethod, ValuationRange>;
+  confidence: ValuationConfidence;
+  factors: {
+    positive: string[];
+    negative: string[];
+    recommendations: string[];
+  };
+  comparables: ComparableSite[];
+  lastCalculatedAt: string;
+}
+
+export interface ComparableSite {
+  domain: string;
+  niche: string;
+  monthlyRevenue: number;
+  monthlyPageviews: number;
+  salePrice: number;
+  saleDate: string;
+  multipleAchieved: number;
+  source: string; // flippa, empire-flippers, etc.
+}
+
+export interface SiteValuation {
+  id: string;
+  tenantId: string;
+  metrics: ValuationMetrics;
+  result: ValuationResult;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
 // API Request/Response Types
 // =============================================================================
 
@@ -732,7 +818,9 @@ export type WebhookEventType =
   | 'conversion.tracked'
   | 'reward.distributed'
   | 'app.installed'
-  | 'app.uninstalled';
+  | 'app.uninstalled'
+  | 'valuation.calculated'
+  | 'valuation.updated';
 
 export interface WebhookEvent {
   id: string;

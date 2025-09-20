@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read/write their own tenant data
+    match /tenants/{tenantId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == tenantId;
+    }
+    
+    // Allow reading public marketplace items
+    match /marketplace/{item} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Real-time analytics
+    match /analytics/{tenantId}/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == tenantId;
+      allow write: if false; // Only server can write
+    }
+    
+    // Push notifications
+    match /notifications/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

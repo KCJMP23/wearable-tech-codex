@@ -8,6 +8,8 @@ import { loginStart, loginSuccess, loginFailure, logout } from '../store/slices/
 import { resetApp } from '../store/slices/appSlice';
 import { STORAGE_KEYS } from '../constants';
 import { User } from '../types';
+import { webSocketService } from '../services/websocket';
+import { offlineQueue } from '../services/offlineQueue';
 
 interface AuthContextType {
   user: User | null;
@@ -16,6 +18,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
   authenticateWithBiometrics: () => Promise<boolean>;
   isBiometricsEnabled: boolean;
   enableBiometrics: () => Promise<void>;
@@ -65,6 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Store user data
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
         await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, session.access_token);
+        
+        // Initialize WebSocket connection
+        try {
+          await webSocketService.initialize(userData.id);
+        } catch (error) {
+          console.error('Failed to initialize WebSocket:', error);
+        }
       } else {
         dispatch(loginFailure('No active session'));
       }
@@ -115,6 +126,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Store user data
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
         await AsyncStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.session.access_token);
+
+        // Initialize WebSocket connection
+        try {
+          await webSocketService.initialize(userData.id);
+        } catch (error) {
+          console.error('Failed to initialize WebSocket on login:', error);
+        }
 
         // Navigate to main app
         router.replace('/(tabs)');
@@ -167,6 +185,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         STORAGE_KEYS.SELECTED_TENANT,
       ]);
 
+      // Disconnect WebSocket and clear offline queue
+      webSocketService.disconnect();
+      await offlineQueue.clearQueue();
+
       // Navigate to auth
       router.replace('/(auth)/login');
     } catch (error) {
@@ -184,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access Wearable Tech Codex',
+        promptMessage: 'Authenticate to access AffiliateOS',
         fallbackLabel: 'Use passcode',
       });
 
@@ -219,6 +241,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
+  };
+
+  const updateProfile = async (data: Partial<User>) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: data.email,
+        data: {
+          name: data.name,
+          avatar_url: data.avatar_url,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local user data
+      const updatedUser = { ...user, ...data } as User;
+      dispatch(loginSuccess({
+        user: updatedUser,
+        token: (await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)) || '',
+      }));
+
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  };
+
   const disableBiometrics = async () => {
     try {
       await AsyncStorage.setItem('@biometrics_enabled', 'false');
@@ -235,6 +297,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
+    resetPassword,
+    updateProfile,
     authenticateWithBiometrics,
     isBiometricsEnabled,
     enableBiometrics,

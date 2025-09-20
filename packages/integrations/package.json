@@ -1,0 +1,23 @@
+{
+  "name": "@affiliate-factory/integrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@affiliate-factory/sdk": "workspace:*",
+    "axios": "^1.6.7",
+    "crypto": "^1.0.1",
+    "qs": "^6.11.2",
+    "xml2js": "^0.6.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/qs": "^6.9.11",
+    "@types/xml2js": "^0.4.14",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
