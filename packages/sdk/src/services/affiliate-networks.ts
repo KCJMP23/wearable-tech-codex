@@ -1,5 +1,5 @@
-import { createClient } from '../supabase/server';
-import type { Database } from '../database.types';
+import { createClient } from '../supabase/server.js';
+import type { Database } from '../database.types.js';
 
 // Network-specific configuration types
 export interface NetworkCredentials {

@@ -9,7 +9,7 @@ import {
   TrendingUp, AlertTriangle, RefreshCw, Terminal, Puzzle
 } from 'lucide-react';
 
-interface MCPServer {
+export interface MCPServer {
   id: string;
   name: string;
   description: string;

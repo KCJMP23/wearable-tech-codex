@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { EmailAnalytics } from '../types';
 
 export interface CampaignAnalytics {
@@ -76,13 +76,15 @@ export interface EmailPerformanceReport {
 }
 
 export class EmailAnalyticsService {
-  private supabase;
+  private supabase: SupabaseClient<any, 'public', any>;
 
-  constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  constructor(supabaseClient?: SupabaseClient<any, 'public', any>) {
+    this.supabase =
+      supabaseClient ??
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
   }
 
   async trackEvent(analytics: Omit<EmailAnalytics, 'id' | 'createdAt'>): Promise<void> {
@@ -90,8 +92,8 @@ export class EmailAnalyticsService {
       await this.supabase
         .from('email_analytics')
         .insert({
-          campaign_id: analytics.campaignId,
-          automation_id: analytics.automationId,
+          campaign_id: analytics.campaignId ?? null,
+          automation_id: analytics.automationId ?? null,
           subscriber_id: analytics.subscriberId,
           event: analytics.event,
           timestamp: analytics.timestamp.toISOString(),
@@ -99,8 +101,8 @@ export class EmailAnalyticsService {
           user_agent: analytics.userAgent,
           ip_address: analytics.ipAddress,
           location: analytics.location,
-          url: analytics.url,
-          message_id: analytics.messageId,
+          url: analytics.url ?? null,
+          message_id: analytics.messageId ?? null,
         });
     } catch (error) {
       console.error('Error tracking email event:', error);
@@ -113,22 +115,24 @@ export class EmailAnalyticsService {
       .select('event, subscriber_id')
       .eq('campaign_id', campaignId);
 
-    if (!events || events.length === 0) {
+    const eventRows = Array.isArray(events) ? events : [];
+
+    if (!eventRows.length) {
       return this.getEmptyCampaignAnalytics(campaignId);
     }
 
-    const eventCounts = events.reduce((acc, event) => {
+    const eventCounts = eventRows.reduce((acc, event) => {
       acc[event.event] = (acc[event.event] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     // Count unique opens and clicks
     const uniqueOpens = new Set(
-      events.filter(e => e.event === 'opened').map(e => e.subscriber_id)
+      eventRows.filter(e => e.event === 'opened').map(e => e.subscriber_id)
     ).size;
 
     const uniqueClicks = new Set(
-      events.filter(e => e.event === 'clicked').map(e => e.subscriber_id)
+      eventRows.filter(e => e.event === 'clicked').map(e => e.subscriber_id)
     ).size;
 
     const sent = eventCounts.sent || 0;

@@ -1,8 +1,17 @@
 'use client';
 
 import { addDays, format, startOfWeek } from 'date-fns';
-import type { CalendarItem } from '@affiliate-factory/sdk';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
+
+interface CalendarItem {
+  id: string;
+  tenantId?: string;
+  itemType: 'post' | 'newsletter' | 'social' | 'agent';
+  title: string;
+  status: string;
+  runAt: string;
+  metadata?: Record<string, unknown>;
+}
 
 interface CalendarBoardProps {
   items: CalendarItem[];

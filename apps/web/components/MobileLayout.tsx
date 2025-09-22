@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, X, Home, BarChart3, Network, Flask, Server, Bell } from 'lucide-react';
+import { Menu, X, Home, BarChart3, Network, TestTube, Server, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { RealTimeNotifications } from './RealTimeNotifications';
@@ -20,7 +20,7 @@ export function MobileLayout({ children, tenantSlug, tenantId }: MobileLayoutPro
     { name: 'Dashboard', href: `/admin/${tenantSlug}`, icon: Home },
     { name: 'Analytics', href: `/admin/${tenantSlug}/analytics`, icon: BarChart3 },
     { name: 'Networks', href: `/admin/${tenantSlug}/networks`, icon: Network },
-    { name: 'A/B Testing', href: `/admin/${tenantSlug}/experiments`, icon: Flask },
+    { name: 'A/B Testing', href: `/admin/${tenantSlug}/experiments`, icon: TestTube },
     { name: 'MCP Servers', href: `/admin/${tenantSlug}/mcp-servers`, icon: Server },
   ];
 

@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { ValuationCalculator } from '@/components/valuation/ValuationCalculator';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 interface PageProps {
@@ -10,7 +10,7 @@ interface PageProps {
 }
 
 async function ValuationContent({ tenantSlug }: { tenantSlug: string }) {
-  const supabase = createServerClient();
+  const supabase = await createClient();
   
   // Get tenant data
   const { data: tenant, error } = await supabase

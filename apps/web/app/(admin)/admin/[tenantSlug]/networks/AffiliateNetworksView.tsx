@@ -5,7 +5,7 @@ import { Card } from '@affiliate-factory/ui';
 import { NetworkConfigModal } from './NetworkConfigModal';
 import { NetworkComparisonTable } from './NetworkComparisonTable';
 
-interface AffiliateNetwork {
+export interface AffiliateNetwork {
   id: string;
   name: string;
   logo: string;

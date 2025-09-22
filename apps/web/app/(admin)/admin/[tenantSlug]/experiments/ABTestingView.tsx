@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { 
-  Flask, Plus, Play, Pause, CheckCircle, TrendingUp, 
+  TestTube, Plus, Play, Pause, CheckCircle, TrendingUp, 
   Users, DollarSign, Target, BarChart3, AlertTriangle,
   Clock, Zap, Award, ChevronRight, Edit, Trash2,
   ArrowUp, ArrowDown, Minus, RefreshCw, Copy
 } from 'lucide-react';
 
-interface Variant {
+export interface Variant {
   id: string;
   name: string;
   description: string;
@@ -25,7 +25,7 @@ interface Variant {
   config: Record<string, any>;
 }
 
-interface Experiment {
+export interface Experiment {
   id: string;
   name: string;
   description: string;
@@ -128,7 +128,7 @@ export function ABTestingView({ tenantSlug, tenantId, experiments: initialExperi
       <div className="grid grid-cols-5 gap-4">
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Flask className="h-4 w-4 text-amber-500" />
+            <TestTube className="h-4 w-4 text-amber-500" />
             <span className="text-xs text-neutral-400">Active</span>
           </div>
           <div className="text-2xl font-semibold text-white">{runningCount}</div>

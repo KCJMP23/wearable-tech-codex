@@ -84,10 +84,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const isDisabled = disabled || loading;
+    const resolvedSize = (size ?? 'md') as keyof typeof iconSize;
 
     const LoadingSpinner = () => (
       <svg
-        className={twMerge('animate-spin', iconSize[size!])}
+        className={twMerge('animate-spin', iconSize[resolvedSize])}
         fill="none"
         viewBox="0 0 24 24"
       >
@@ -125,13 +126,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           <>
             {leftIcon && (
-              <span className={twMerge('flex-shrink-0', iconSize[size!])}>
+              <span className={twMerge('flex-shrink-0', iconSize[resolvedSize])}>
                 {leftIcon}
               </span>
             )}
             <span>{children}</span>
             {rightIcon && (
-              <span className={twMerge('flex-shrink-0', iconSize[size!])}>
+              <span className={twMerge('flex-shrink-0', iconSize[resolvedSize])}>
                 {rightIcon}
               </span>
             )}
@@ -224,15 +225,16 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       xl: 'h-12 w-12 p-0',
       '2xl': 'h-14 w-14 p-0',
     };
+    const resolvedSize = size as keyof typeof sizeClasses;
 
     return (
       <Button
         ref={ref}
         size={size}
-        className={twMerge(sizeClasses[size], className)}
+        className={twMerge(sizeClasses[resolvedSize], className)}
         {...props}
       >
-        <span className={iconSize[size]}>{icon}</span>
+        <span className={iconSize[resolvedSize]}>{icon}</span>
       </Button>
     );
   }

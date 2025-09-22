@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ABTestingView } from './ABTestingView';
+import { ABTestingView, type Experiment } from './ABTestingView';
 
 // Mock experiments data - in production, fetch from database
-const EXPERIMENTS = [
+const EXPERIMENTS: Experiment[] = [
   {
     id: 'exp-001',
     name: 'Hero CTA Button Color',

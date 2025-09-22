@@ -1,18 +1,21 @@
 import { render } from '@react-email/render';
+import { createElement } from 'react';
 import { BaseEmailProvider, EmailProviderFactory } from './providers';
 import { EmailConfig, EmailMessage, SendEmailResponse, Campaign, Subscriber } from './types';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export class EmailService {
   private provider: BaseEmailProvider;
-  private supabase;
+  private supabase: SupabaseClient<any, 'public', any>;
 
-  constructor(config: EmailConfig) {
+  constructor(config: EmailConfig, supabaseClient?: SupabaseClient<any, 'public', any>) {
     this.provider = EmailProviderFactory.create(config);
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    this.supabase =
+      supabaseClient ??
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
   }
 
   async sendEmail(message: EmailMessage): Promise<SendEmailResponse> {
@@ -61,8 +64,9 @@ export class EmailService {
   ): Promise<SendEmailResponse> {
     try {
       // Render React template to HTML
-      const html = render(templateComponent(templateProps));
-      const text = render(templateComponent(templateProps), { plainText: true });
+      const element = createElement(templateComponent, templateProps);
+      const html = render(element);
+      const text = render(element, { plainText: true });
 
       const message: EmailMessage = {
         to: recipients,
@@ -224,12 +228,21 @@ export class EmailService {
   private async handleWebhookEvent(event: any): Promise<void> {
     // Update subscriber status based on event
     if (event.event === 'bounced' || event.event === 'complained') {
+      const { data: subscriber } = await this.supabase
+        .from('email_subscribers')
+        .select('bounce_count, complaint_count')
+        .eq('email', event.email)
+        .maybeSingle();
+
+      const bounceCount = subscriber?.bounce_count ?? 0;
+      const complaintCount = subscriber?.complaint_count ?? 0;
+
       await this.supabase
         .from('email_subscribers')
         .update({
           status: event.event === 'bounced' ? 'bounced' : 'complained',
-          bounce_count: event.event === 'bounced' ? this.supabase.raw('bounce_count + 1') : undefined,
-          complaint_count: event.event === 'complained' ? this.supabase.raw('complaint_count + 1') : undefined,
+          bounce_count: event.event === 'bounced' ? bounceCount + 1 : bounceCount,
+          complaint_count: event.event === 'complained' ? complaintCount + 1 : complaintCount,
         })
         .eq('email', event.email);
     }

@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { format, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
+import { startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import {
   Experiment,
   ExperimentResults,
@@ -8,7 +8,11 @@ import {
   Insight,
   Recommendation,
   SegmentResults,
-  MetricType
+  MetricResult,
+  PerformanceMetrics,
+  TimeSeriesData,
+  TimeSeriesVariantMetrics,
+  FunnelAnalysis
 } from './types.js';
 
 export class ReportingEngine {
@@ -81,15 +85,18 @@ export class ReportingEngine {
 
   private async getExperimentResults(experiment: Experiment): Promise<VariantResult[]> {
     // Get exposures and conversions
-    const { data: exposures } = await this.supabase
+    const { data: exposureData } = await this.supabase
       .from('ab_exposures')
       .select('*')
       .eq('experiment_id', experiment.id);
 
-    const { data: conversions } = await this.supabase
+    const { data: conversionData } = await this.supabase
       .from('ab_conversions')
       .select('*')
       .eq('experiment_id', experiment.id);
+
+    const exposures = (exposureData ?? []) as ExposureRow[];
+    const conversions = (conversionData ?? []) as ConversionRow[];
 
     // Aggregate by variant
     const variantMap = new Map<string, VariantResult>();
@@ -104,14 +111,14 @@ export class ReportingEngine {
       });
     });
 
-    exposures?.forEach(exposure => {
+    exposures.forEach(exposure => {
       const result = variantMap.get(exposure.variant_id);
       if (result) {
         result.exposures++;
       }
     });
 
-    conversions?.forEach(conversion => {
+    conversions.forEach(conversion => {
       const result = variantMap.get(conversion.variant_id);
       if (result) {
         if (!result.conversions[conversion.metric_id]) {
@@ -240,9 +247,10 @@ export class ReportingEngine {
 
     // Add funnel analysis
     const funnelData = await this.analyzeFunnel(experiment.id);
-    (baseReport as any).funnel = funnelData;
-
-    return baseReport;
+    return {
+      ...baseReport,
+      funnel: funnelData
+    };
   }
 
   private async generateTimeSeriesReport(
@@ -253,9 +261,10 @@ export class ReportingEngine {
 
     // Add time series data
     const timeSeriesData = await this.getTimeSeriesData(experiment);
-    (baseReport as any).timeSeries = timeSeriesData;
-
-    return baseReport;
+    return {
+      ...baseReport,
+      timeSeries: timeSeriesData
+    };
   }
 
   private async getTimeSeriesData(experiment: Experiment): Promise<TimeSeriesData[]> {
@@ -270,7 +279,7 @@ export class ReportingEngine {
       const dayEnd = endOfDay(day);
 
       // Get exposures for this day
-      const { data: exposures } = await this.supabase
+      const { data: exposuresData } = await this.supabase
         .from('ab_exposures')
         .select('variant_id')
         .eq('experiment_id', experiment.id)
@@ -278,18 +287,21 @@ export class ReportingEngine {
         .lte('timestamp', dayEnd.toISOString());
 
       // Get conversions for this day
-      const { data: conversions } = await this.supabase
+      const { data: conversionsData } = await this.supabase
         .from('ab_conversions')
         .select('variant_id, metric_id')
         .eq('experiment_id', experiment.id)
         .gte('timestamp', dayStart.toISOString())
         .lte('timestamp', dayEnd.toISOString());
 
-      const variantData: Record<string, any> = {};
+      const dailyExposures = (exposuresData ?? []) as Array<Pick<ExposureRow, 'variant_id'>>;
+      const dailyConversions = (conversionsData ?? []) as Array<Pick<ConversionRow, 'variant_id'>>;
+
+      const variantData: Record<string, TimeSeriesVariantMetrics> = {};
 
       experiment.variants.forEach(variant => {
-        const variantExposures = exposures?.filter(e => e.variant_id === variant.id).length || 0;
-        const variantConversions = conversions?.filter(c => c.variant_id === variant.id).length || 0;
+        const variantExposures = dailyExposures.filter(e => e.variant_id === variant.id).length;
+        const variantConversions = dailyConversions.filter(c => c.variant_id === variant.id).length;
 
         variantData[variant.id] = {
           exposures: variantExposures,
@@ -308,22 +320,51 @@ export class ReportingEngine {
   }
 
   private async analyzeFunnel(experimentId: string): Promise<FunnelAnalysis> {
-    // Analyze conversion funnel
     const { data: events } = await this.supabase
       .from('ab_events')
       .select('*')
       .eq('experiment_id', experimentId)
       .order('timestamp');
 
-    // Define funnel steps (this would be configurable)
     const funnelSteps = ['view', 'click', 'add_to_cart', 'checkout', 'purchase'];
     const funnelData: FunnelAnalysis = {
       steps: funnelSteps,
       variants: {}
     };
 
-    // Calculate funnel metrics for each variant
-    // This is simplified - actual implementation would be more complex
+    const funnelEvents = (events ?? []) as FunnelEventRow[];
+    const variantIds = new Set(funnelEvents.map(event => event.variant_id));
+
+    variantIds.forEach(variantId => {
+      const counts: Record<string, number> = {};
+      funnelSteps.forEach(step => {
+        counts[step] = 0;
+      });
+
+      funnelEvents
+        .filter(event => event.variant_id === variantId && funnelSteps.includes(event.event_type))
+        .forEach(event => {
+          counts[event.event_type] += 1;
+        });
+
+      const conversionRates: Record<string, number> = {};
+      if (funnelSteps.length > 0) {
+        conversionRates[funnelSteps[0]] = 1;
+        for (let i = 1; i < funnelSteps.length; i++) {
+          const previousStep = funnelSteps[i - 1];
+          const currentStep = funnelSteps[i];
+          const previousCount = counts[previousStep];
+          const currentCount = counts[currentStep];
+          conversionRates[currentStep] = previousCount > 0 ? currentCount / previousCount : 0;
+        }
+      }
+
+      funnelData.variants[variantId] = {
+        counts,
+        conversionRates
+      };
+    });
+
     return funnelData;
   }
 
@@ -333,12 +374,12 @@ export class ReportingEngine {
       .select('*')
       .eq('experiment_id', experimentId);
 
-    return segments || [];
+    return (segments ?? []) as SegmentResults[];
   }
 
   private async getDetailedSegmentResults(experimentId: string): Promise<SegmentResults[]> {
     // Get all segments used in the experiment
-    const { data: exposures } = await this.supabase
+    const { data: exposuresData } = await this.supabase
       .from('ab_exposures')
       .select('variant_id, context')
       .eq('experiment_id', experimentId);
@@ -346,15 +387,17 @@ export class ReportingEngine {
     // Extract unique segments from context
     const segmentMap = new Map<string, SegmentResults>();
 
-    exposures?.forEach(exposure => {
-      const segments = exposure.context?.segments || [];
-      segments.forEach((segmentId: string) => {
+    const segmentExposures = (exposuresData ?? []) as SegmentExposureRow[];
+
+    segmentExposures.forEach(exposure => {
+      const segments = exposure.context?.segments ?? [];
+      segments.forEach(segmentId => {
         if (!segmentMap.has(segmentId)) {
           segmentMap.set(segmentId, {
             segmentId,
             segmentName: segmentId, // Would fetch actual name
             exposures: 0,
-            variants: []
+            variants: [] as VariantResult[]
           });
         }
         segmentMap.get(segmentId)!.exposures++;
@@ -364,16 +407,17 @@ export class ReportingEngine {
     return Array.from(segmentMap.values());
   }
 
-  private async getPerformanceMetrics(experimentId: string): Promise<any> {
+  private async getPerformanceMetrics(experimentId: string): Promise<PerformanceMetrics> {
     const { data } = await this.supabase
       .from('ab_performance_metrics')
       .select('*')
       .eq('experiment_id', experimentId);
 
-    return this.aggregatePerformanceMetrics(data || []);
+    const metrics = (data ?? []) as PerformanceMetricsRow[];
+    return this.aggregatePerformanceMetrics(metrics);
   }
 
-  private aggregatePerformanceMetrics(metrics: any[]): any {
+  private aggregatePerformanceMetrics(metrics: PerformanceMetricsRow[]): PerformanceMetrics {
     if (metrics.length === 0) {
       return {
         avgLoadTime: 0,
@@ -386,13 +430,13 @@ export class ReportingEngine {
     }
 
     // Aggregate metrics (simplified)
-    const aggregated = {
-      avgLoadTime: metrics.reduce((sum, m) => sum + m.metrics.avgLoadTime, 0) / metrics.length,
-      p50LoadTime: metrics.reduce((sum, m) => sum + m.metrics.p50LoadTime, 0) / metrics.length,
-      p75LoadTime: metrics.reduce((sum, m) => sum + m.metrics.p75LoadTime, 0) / metrics.length,
-      p95LoadTime: metrics.reduce((sum, m) => sum + m.metrics.p95LoadTime, 0) / metrics.length,
-      p99LoadTime: metrics.reduce((sum, m) => sum + m.metrics.p99LoadTime, 0) / metrics.length,
-      errorRate: metrics.reduce((sum, m) => sum + m.metrics.errorRate, 0) / metrics.length
+    const aggregated: PerformanceMetrics = {
+      avgLoadTime: metrics.reduce((sum, m) => sum + (m.metrics.avgLoadTime || 0), 0) / metrics.length,
+      p50LoadTime: metrics.reduce((sum, m) => sum + (m.metrics.p50LoadTime || 0), 0) / metrics.length,
+      p75LoadTime: metrics.reduce((sum, m) => sum + (m.metrics.p75LoadTime || 0), 0) / metrics.length,
+      p95LoadTime: metrics.reduce((sum, m) => sum + (m.metrics.p95LoadTime || 0), 0) / metrics.length,
+      p99LoadTime: metrics.reduce((sum, m) => sum + (m.metrics.p99LoadTime || 0), 0) / metrics.length,
+      errorRate: metrics.reduce((sum, m) => sum + (m.metrics.errorRate || 0), 0) / metrics.length
     };
 
     return aggregated;
@@ -683,29 +727,60 @@ export class ReportingEngine {
     }
   }
 
-  private convertToCSV(report: any): string {
-    // Convert report data to CSV format
+  private convertToCSV(report: StoredReportRow): string {
     const rows: string[] = [];
-    
-    // Headers
     rows.push('Variant,Exposures,Conversions,Conversion Rate,Uplift');
-    
-    // Data rows
-    report.data.variants.forEach((variant: any) => {
-      const primaryMetric = Object.values(variant.metrics)[0] as any;
-      rows.push([
-        variant.variantName,
-        variant.exposures,
-        primaryMetric?.conversions || 0,
-        (primaryMetric?.conversionRate || 0).toFixed(4),
-        (variant.uplift || 0).toFixed(2)
-      ].join(','));
+
+    report.data.variants.forEach((variant: VariantResult) => {
+      const metricsArray = Object.values(variant.metrics) as MetricResult[];
+      const primaryMetric = metricsArray[0];
+      rows.push(
+        [
+          variant.variantName,
+          variant.exposures,
+          primaryMetric?.conversions ?? 0,
+          (primaryMetric?.conversionRate ?? 0).toFixed(4),
+          (variant.uplift ?? 0).toFixed(2)
+        ].join(',')
+      );
     });
 
     return rows.join('\n');
   }
 
-  private generateHTML(report: any): string {
+  private generateHTML(report: StoredReportRow): string {
+    const variantRows = report.data.variants
+      .map((variant: VariantResult) => {
+        const metricsArray = Object.values(variant.metrics) as MetricResult[];
+        const primaryMetric = metricsArray[0];
+        const variantUplift = variant.uplift ?? 0;
+        const rowClass = variantUplift > 0 ? 'positive' : 'negative';
+        return `
+    <tr>
+      <td>${variant.variantName}</td>
+      <td>${variant.exposures}</td>
+      <td>${primaryMetric?.conversionRate?.toFixed(4) ?? 'N/A'}</td>
+      <td class="${rowClass}">${variant.uplift !== undefined ? variantUplift.toFixed(2) : 'N/A'}%</td>
+      <td>${variant.isWinner ? '🏆 Winner' : ''}</td>
+    </tr>`;
+      })
+      .join('');
+
+    const insightItems = report.insights
+      .map((insight: Insight) => `
+    <li class="${insight.type}">
+      <strong>${insight.title}:</strong> ${insight.description}
+    </li>`)
+      .join('');
+
+    const recommendationItems = report.recommendations
+      .map((recommendation: Recommendation) => `
+    <li>
+      <strong>${recommendation.action}:</strong> ${recommendation.reason}
+      ${recommendation.expectedImpact ? `<br>Expected Impact: ${recommendation.expectedImpact}` : ''}
+    </li>`)
+      .join('');
+
     return `
 <!DOCTYPE html>
 <html>
@@ -735,34 +810,17 @@ export class ReportingEngine {
       <th>Uplift</th>
       <th>Status</th>
     </tr>
-    ${report.data.variants.map((v: any) => `
-    <tr>
-      <td>${v.variantName}</td>
-      <td>${v.exposures}</td>
-      <td>${(Object.values(v.metrics)[0] as any)?.conversionRate?.toFixed(4) || 'N/A'}</td>
-      <td class="${v.uplift > 0 ? 'positive' : 'negative'}">${v.uplift?.toFixed(2) || 'N/A'}%</td>
-      <td>${v.isWinner ? '🏆 Winner' : ''}</td>
-    </tr>
-    `).join('')}
+    ${variantRows}
   </table>
   
   <h2>Insights</h2>
   <ul>
-    ${report.insights.map((i: any) => `
-    <li class="${i.type}">
-      <strong>${i.title}:</strong> ${i.description}
-    </li>
-    `).join('')}
+    ${insightItems}
   </ul>
   
   <h2>Recommendations</h2>
   <ul>
-    ${report.recommendations.map((r: any) => `
-    <li>
-      <strong>${r.action}:</strong> ${r.reason}
-      ${r.expectedImpact ? `<br>Expected Impact: ${r.expectedImpact}` : ''}
-    </li>
-    `).join('')}
+    ${recommendationItems}
   </ul>
 </body>
 </html>
@@ -777,12 +835,39 @@ interface InsightThresholds {
   minimumDuration: number;
 }
 
-interface TimeSeriesData {
-  date: Date;
-  variants: Record<string, any>;
+interface ExposureRow {
+  variant_id: string;
+  context?: Record<string, unknown> | null;
+  timestamp?: string;
 }
 
-interface FunnelAnalysis {
-  steps: string[];
-  variants: Record<string, any>;
+interface ConversionRow {
+  variant_id: string;
+  metric_id: string;
+  revenue?: number | null;
+  timestamp?: string;
+}
+
+interface SegmentExposureRow extends ExposureRow {
+  context?: {
+    segments?: string[];
+  } | null;
+}
+
+interface PerformanceMetricsRow {
+  metrics: PerformanceMetrics;
+}
+
+interface FunnelEventRow {
+  variant_id: string;
+  event_type: string;
+}
+
+interface StoredReportRow {
+  id: string;
+  experiment_id: string;
+  generated_at: string;
+  data: ExperimentResults;
+  insights: Insight[];
+  recommendations: Recommendation[];
 }

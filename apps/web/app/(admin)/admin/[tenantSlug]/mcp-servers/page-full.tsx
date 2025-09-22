@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { MCPServersView } from './MCPServersView';
+import { MCPServersView, type MCPServer } from './MCPServersView';
 
 // Mock MCP servers data - in production, fetch from database
-const getMCPServers = () => [
+const getMCPServers = (): MCPServer[] => [
   {
     id: 'brave-search',
     name: 'Brave Search',

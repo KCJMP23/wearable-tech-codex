@@ -4,9 +4,7 @@ import {
   Experiment,
   ExperimentStatus,
   VariantResult,
-  WinnerCriteria,
   Metric,
-  MetricType,
   StatisticalTest
 } from './types.js';
 
@@ -92,7 +90,7 @@ export class WinnerSelector {
     const winnerResult = this.determineWinner(experiment, evaluations);
 
     // Record decision
-    await this.recordDecision(experiment.id, winnerResult);
+    await this.recordDecision(experiment, winnerResult);
 
     return winnerResult;
   }
@@ -330,6 +328,8 @@ export class WinnerSelector {
       metricName: metric.name,
       controlValue: control.metrics[metric.id]?.conversionRate || 0,
       variantValue: variant.metrics[metric.id]?.conversionRate || 0,
+      controlConversions,
+      variantConversions,
       uplift: significance.uplift,
       upliftCI: significance.upliftConfidenceInterval,
       pValue: significance.pValue,
@@ -427,8 +427,9 @@ export class WinnerSelector {
 
       // Check minimum conversions
       if (criteria.minimumConversions) {
-        const variantConversions = metricEval.variantValue * evaluation.variantId;
-        if (variantConversions < criteria.minimumConversions) return false;
+        if ((metricEval.variantConversions ?? 0) < criteria.minimumConversions) {
+          return false;
+        }
       }
     }
 
@@ -491,9 +492,10 @@ export class WinnerSelector {
   }
 
   private async recordDecision(
-    experimentId: string,
+    experiment: Experiment,
     result: WinnerSelectionResult
   ): Promise<void> {
+    const experimentId = experiment.id;
     const decision: WinnerDecision = {
       experimentId,
       timestamp: new Date(),
@@ -622,6 +624,8 @@ interface MetricEvaluation {
   metricName: string;
   controlValue: number;
   variantValue: number;
+  controlConversions: number;
+  variantConversions: number;
   uplift: number;
   upliftCI: [number, number];
   pValue: number;

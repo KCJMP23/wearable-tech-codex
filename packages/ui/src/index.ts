@@ -29,6 +29,3 @@ export * from './components/QuizDrawer';
 export * from './components/HolidayBanner';
 export * from './components/CalendarBoard';
 export * from './components/StickyCTA';
-
-// Styles
-export * from './styles/globals.css';

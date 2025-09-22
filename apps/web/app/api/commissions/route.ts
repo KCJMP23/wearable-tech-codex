@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
+import { ensureInternalApiAccess } from '@/lib/security/internal-auth';
 import { z } from 'zod';
 
 const processPayoutSchema = z.object({
@@ -17,6 +18,11 @@ const updateCommissionSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
@@ -118,6 +124,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const commissionId = searchParams.get('id');
@@ -191,6 +202,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const body = await request.json();
     const { action } = body;

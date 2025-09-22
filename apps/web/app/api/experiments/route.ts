@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { experimentService } from '@/lib/services/experiments';
+import { ensureInternalApiAccess } from '@/lib/security/internal-auth';
 
 export async function GET(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenantId');
@@ -25,6 +31,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const body = await request.json();
     const { tenantId, experiment, variants } = body;

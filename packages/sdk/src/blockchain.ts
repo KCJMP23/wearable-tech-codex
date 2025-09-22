@@ -8,8 +8,8 @@ import type {
   RegisterConversionRequest,
   AffiliateStats,
 } from '@affiliate-factory/blockchain/types';
-import { getSupabaseClient } from './supabase';
-import type { Database } from './database.types';
+import { getSupabaseClient } from './supabase.js';
+import type { Database } from './database.types.js';
 
 /**
  * Blockchain integration service for the main SDK

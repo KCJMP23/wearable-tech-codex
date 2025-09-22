@@ -2,9 +2,40 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   PerformanceMetrics,
   PerformanceImpact,
-  Variant,
-  ExperimentResults
+  Variant
 } from './types.js';
+
+declare global {
+  interface Window {
+    __abTestingExperimentId?: string;
+    __abTestingVariantId?: string;
+  }
+}
+
+type LayoutShiftEntry = PerformanceEntry & {
+  value: number;
+  hadRecentInput: boolean;
+};
+
+type WebVitalsMetrics = Partial<{
+  lcp: number;
+  fid: number;
+  cls: number;
+  inp: number;
+  ttfb: number;
+  fcp: number;
+}>;
+
+type ImpactSummary = {
+  loadTime: number;
+  errorRate: number;
+  coreWebVitals: {
+    lcp: number;
+    fid: number;
+    cls: number;
+    inp: number;
+  };
+};
 
 export class PerformanceMonitor {
   private metricsBuffer: Map<string, PerformanceEntry[]> = new Map();
@@ -86,7 +117,8 @@ export class PerformanceMonitor {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if ('processingStart' in entry) {
-            const fid = entry.processingStart - entry.startTime;
+            const firstInput = entry as PerformanceEventTiming;
+            const fid = firstInput.processingStart - firstInput.startTime;
             this.recordMetric('fid', fid);
             observer.disconnect();
             break;
@@ -104,24 +136,27 @@ export class PerformanceMonitor {
 
     let cls = 0;
     let sessionValue = 0;
-    let sessionEntries: any[] = [];
+    let sessionEntries: LayoutShiftEntry[] = [];
 
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
+          const layoutShift = entry as LayoutShiftEntry;
+          if (!layoutShift.hadRecentInput) {
             const firstSessionEntry = sessionEntries[0];
             const lastSessionEntry = sessionEntries[sessionEntries.length - 1];
 
             // If the entry is 1 second after the last entry or 5 seconds after the first entry
             if (sessionValue &&
-                entry.startTime - lastSessionEntry.startTime < 1000 &&
-                entry.startTime - firstSessionEntry.startTime < 5000) {
-              sessionValue += (entry as any).value;
-              sessionEntries.push(entry);
+                lastSessionEntry &&
+                firstSessionEntry &&
+                layoutShift.startTime - lastSessionEntry.startTime < 1000 &&
+                layoutShift.startTime - firstSessionEntry.startTime < 5000) {
+              sessionValue += layoutShift.value;
+              sessionEntries.push(layoutShift);
             } else {
-              sessionValue = (entry as any).value;
-              sessionEntries = [entry];
+              sessionValue = layoutShift.value;
+              sessionEntries = [layoutShift];
             }
 
             if (sessionValue > cls) {
@@ -145,8 +180,9 @@ export class PerformanceMonitor {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if ('interactionId' in entry && (entry as any).interactionId) {
-            const inp = (entry as any).duration;
+          const timing = entry as InteractionEventTiming;
+          if (typeof timing.interactionId === 'number' && timing.interactionId > 0) {
+            const inp = timing.duration;
             if (inp > worstINP) {
               worstINP = inp;
               this.recordMetric('inp', inp);
@@ -164,8 +200,8 @@ export class PerformanceMonitor {
     if (typeof window === 'undefined' || !window.performance) return;
 
     try {
-      const navigation = performance.getEntriesByType('navigation')[0] as any;
-      if (navigation?.responseStart) {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+      if (navigation && navigation.responseStart) {
         const ttfb = navigation.responseStart - navigation.requestStart;
         this.recordMetric('ttfb', ttfb);
       }
@@ -239,12 +275,12 @@ export class PerformanceMonitor {
 
   private getCurrentExperimentId(): string | null {
     // This would be set by the experiment engine
-    return (window as any).__abTestingExperimentId || null;
+    return typeof window !== 'undefined' ? window.__abTestingExperimentId ?? null : null;
   }
 
   private getCurrentVariantId(): string | null {
     // This would be set by the experiment engine
-    return (window as any).__abTestingVariantId || null;
+    return typeof window !== 'undefined' ? window.__abTestingVariantId ?? null : null;
   }
 
   private setupFlushing() {
@@ -288,12 +324,14 @@ export class PerformanceMonitor {
 
   private calculateMetrics(entries: PerformanceEntry[]): PerformanceMetrics {
     const loadTimes: number[] = [];
-    const webVitals: any = {};
+    const webVitals: WebVitalsMetrics = {};
 
     for (const entry of entries) {
       if (entry.entryType === 'navigation') {
-        const nav = entry as any;
-        loadTimes.push(nav.loadEventEnd - nav.fetchStart);
+        const nav = entry as PerformanceNavigationTiming;
+        if (nav.loadEventEnd && nav.fetchStart) {
+          loadTimes.push(nav.loadEventEnd - nav.fetchStart);
+        }
       } else if (entry.name === 'lcp') {
         webVitals.lcp = entry.startTime;
       } else if (entry.name === 'fid') {
@@ -358,16 +396,17 @@ export class PerformanceMonitor {
       return this.getEmptyMetrics();
     }
 
-    const aggregated: any = {};
-    const keys = Object.keys(metricsList[0]);
+    const aggregated: Partial<PerformanceMetrics> = {};
+    const keys = Object.keys(metricsList[0]) as Array<keyof PerformanceMetrics>;
 
     for (const key of keys) {
-      const values = metricsList.map(m => (m as any)[key]).filter(v => v != null);
-      if (values.length > 0) {
-        aggregated[key] = values.reduce((a, b) => a + b, 0) / values.length;
-      } else {
-        aggregated[key] = 0;
-      }
+      const values = metricsList
+        .map(metric => metric[key])
+        .filter((value): value is number => typeof value === 'number');
+
+      aggregated[key] = values.length > 0
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
+        : 0;
     }
 
     return aggregated as PerformanceMetrics;
@@ -463,7 +502,7 @@ export class PerformanceMonitor {
     return ((current - baseline) / baseline) * 100;
   }
 
-  private checkThresholds(impact: any): boolean {
+  private checkThresholds(impact: ImpactSummary): boolean {
     const thresholds = this.options.thresholds || this.getDefaultThresholds();
 
     // Check if performance degradation is within acceptable limits
@@ -503,7 +542,7 @@ export class PerformanceMonitor {
 
     if (error) throw error;
 
-    const variants: Variant[] = data.variants;
+    const variants: Variant[] = (data?.variants ?? []) as Variant[];
     const impacts: PerformanceImpact[] = [];
 
     for (const variant of variants) {
@@ -564,13 +603,12 @@ export class PerformanceMonitor {
   public trackRealUserMetrics(
     experimentId: string,
     variantId: string,
-    userId?: string
   ) {
     if (typeof window === 'undefined') return;
 
     // Set experiment context for performance tracking
-    (window as any).__abTestingExperimentId = experimentId;
-    (window as any).__abTestingVariantId = variantId;
+    window.__abTestingExperimentId = experimentId;
+    window.__abTestingVariantId = variantId;
 
     // Track page view with performance timing
     if (window.performance && window.performance.timing) {
@@ -588,10 +626,7 @@ export class PerformanceMonitor {
     if (typeof window === 'undefined') return;
 
     // Track click interactions
-    document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      const interactionTime = performance.now();
-      
+    document.addEventListener('click', () => {
       // Mark interaction for INP calculation
       performance.mark(`interaction-${Date.now()}`);
     }, { passive: true });
@@ -607,6 +642,10 @@ export class PerformanceMonitor {
     }
     this.flushMetrics();
   }
+}
+
+interface InteractionEventTiming extends PerformanceEventTiming {
+  interactionId?: number;
 }
 
 interface PerformanceThresholds {

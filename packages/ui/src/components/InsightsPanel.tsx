@@ -1,9 +1,25 @@
 'use client';
 
-import type { InsightCard } from '@affiliate-factory/sdk';
 import { Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './Card';
 import { Button } from './Button';
+
+interface InsightAction {
+  type: 'run-agent' | 'open-url' | 'schedule';
+  payload: Record<string, unknown>;
+}
+
+interface InsightCard {
+  id: string;
+  tenantId?: string;
+  kpi: string;
+  value: number;
+  window: string;
+  headline: string;
+  body: string;
+  actionLabel?: string;
+  action?: InsightAction;
+}
 
 interface InsightsPanelProps {
   insights: InsightCard[];

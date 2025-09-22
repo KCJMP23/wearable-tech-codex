@@ -2,9 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   Variant,
   Experiment,
-  ExperimentStatus,
   VariantResult,
-  AllocationStrategy,
   AllocationError
 } from './types.js';
 
@@ -439,18 +437,26 @@ export class VariantManager {
     numVariants: number,
     expectedEffect?: number
   ): Variant[] {
+    if (numVariants <= 1) {
+      return [{ id: 'control', name: 'Control', weight: 100, isControl: true }];
+    }
+
+    const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+    const effectAdjustment = expectedEffect !== undefined ? clamp(expectedEffect, -20, 20) : 0;
     const variants: Variant[] = [];
 
     if (numVariants === 2) {
-      // 50/50 split for A/B test
+      const controlWeight = clamp(50 + effectAdjustment, 0, 100);
+      const variantWeight = 100 - controlWeight;
       variants.push(
-        { id: 'control', name: 'Control', weight: 50, isControl: true },
-        { id: 'variant_a', name: 'Variant A', weight: 50 }
+        { id: 'control', name: 'Control', weight: controlWeight, isControl: true },
+        { id: 'variant_a', name: 'Variant A', weight: variantWeight }
       );
     } else {
-      // For multi-variant tests, give control more weight initially
-      const controlWeight = 100 / numVariants + 10; // Control gets extra 10%
-      const variantWeight = (100 - controlWeight) / (numVariants - 1);
+      const baseControlWeight = 100 / numVariants + 10;
+      const controlWeight = clamp(baseControlWeight + effectAdjustment, 0, 100);
+      const remainingWeight = Math.max(0, 100 - controlWeight);
+      const variantWeight = remainingWeight / (numVariants - 1);
 
       variants.push({
         id: 'control',
@@ -490,14 +496,20 @@ export class VariantManager {
     const d = shape - 1/3;
     const c = 1 / Math.sqrt(9 * d);
 
-    while (true) {
+    let sample: number | undefined;
+    while (sample === undefined) {
       const z = this.randomNormal();
       const v = Math.pow(1 + c * z, 3);
       const u = Math.random();
 
-      if (u < 1 - 0.0331 * z * z * z * z) return d * v;
-      if (Math.log(u) < 0.5 * z * z + d * (1 - v + Math.log(v))) return d * v;
+      if (u < 1 - 0.0331 * z * z * z * z) {
+        sample = d * v;
+      } else if (Math.log(u) < 0.5 * z * z + d * (1 - v + Math.log(v))) {
+        sample = d * v;
+      }
     }
+
+    return sample;
   }
 
   // Helper function for normal distribution

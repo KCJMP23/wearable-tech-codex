@@ -1,17 +1,23 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as murmur from 'murmurhash';
-import { 
-  Experiment, 
-  ExperimentStatus, 
-  Variant, 
+import {
+  Experiment,
+  ExperimentStatus,
+  Variant,
   UserContext,
   Assignment,
   ExposureEvent,
   ConversionEvent,
-  AllocationError,
   ExperimentSchema,
-  AllocationStrategy
+  Segment,
+  SegmentCondition,
 } from './types.js';
+
+type ExperimentChangePayload = {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: unknown;
+  old: unknown;
+};
 
 export class ExperimentEngine {
   private supabase: SupabaseClient;
@@ -87,21 +93,23 @@ export class ExperimentEngine {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'ab_experiments' },
         (payload) => {
-          this.handleExperimentChange(payload);
+          this.handleExperimentChange(payload as ExperimentChangePayload);
         }
       )
       .subscribe();
   }
 
-  private handleExperimentChange(payload: any) {
+  private handleExperimentChange(payload: ExperimentChangePayload) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
+    const nextRecord = this.normalizeExperimentRecord(newRecord);
+    const previousRecord = this.normalizeExperimentRecord(oldRecord);
 
     switch (eventType) {
       case 'INSERT':
       case 'UPDATE':
-        if (newRecord) {
+        if (nextRecord) {
           try {
-            const validated = ExperimentSchema.parse(newRecord);
+            const validated = ExperimentSchema.parse(nextRecord);
             this.experiments.set(validated.id, validated);
           } catch (error) {
             console.error('Invalid experiment data:', error);
@@ -109,11 +117,18 @@ export class ExperimentEngine {
         }
         break;
       case 'DELETE':
-        if (oldRecord?.id) {
-          this.experiments.delete(oldRecord.id);
+        if (previousRecord?.id) {
+          this.experiments.delete(previousRecord.id);
         }
         break;
     }
+  }
+
+  private normalizeExperimentRecord(record: unknown): Partial<Experiment> | null {
+    if (!record || typeof record !== 'object') {
+      return null;
+    }
+    return record as Partial<Experiment>;
   }
 
   // Core allocation logic
@@ -182,7 +197,8 @@ export class ExperimentEngine {
     context: UserContext
   ): Variant {
     const bucketer = this.getBucketingKey(experiment, context);
-    const hash = murmur.v3(bucketer, experiment.allocation.seed || 0);
+    const seed = Number(experiment.allocation.seed ?? 0);
+    const hash = murmur.v3(bucketer, Number.isFinite(seed) ? seed : 0);
     const bucket = (hash % 10000) / 100; // 0-100 with 2 decimal precision
 
     let cumulative = 0;
@@ -244,9 +260,9 @@ export class ExperimentEngine {
     return false;
   }
 
-  private evaluateSegment(segment: any, context: UserContext): boolean {
+  private evaluateSegment(segment: Segment, context: UserContext): boolean {
     const operator = segment.operator || 'AND';
-    const results = segment.conditions.map((condition: any) => 
+    const results = segment.conditions.map(condition =>
       this.evaluateCondition(condition, context)
     );
 
@@ -257,7 +273,7 @@ export class ExperimentEngine {
     }
   }
 
-  private evaluateCondition(condition: any, context: UserContext): boolean {
+  private evaluateCondition(condition: SegmentCondition, context: UserContext): boolean {
     const value = this.getNestedValue(context, condition.field);
     
     switch (condition.operator) {
@@ -276,16 +292,25 @@ export class ExperimentEngine {
       case 'lte':
         return Number(value) <= Number(condition.value);
       case 'in':
-        return Array.isArray(condition.value) && condition.value.includes(value);
+        return Array.isArray(condition.value)
+          ? (condition.value as unknown[]).includes(value)
+          : false;
       case 'not_in':
-        return Array.isArray(condition.value) && !condition.value.includes(value);
+        return Array.isArray(condition.value)
+          ? !(condition.value as unknown[]).includes(value)
+          : false;
       default:
         return false;
     }
   }
 
-  private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  private getNestedValue(obj: UserContext, path: string): unknown {
+    return path.split('.').reduce<unknown>((current, key) => {
+      if (current && typeof current === 'object') {
+        return (current as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj as unknown);
   }
 
   private getDefaultAssignment(experimentId: string): Assignment {

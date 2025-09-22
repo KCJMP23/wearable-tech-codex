@@ -50,7 +50,7 @@ export function Heading({
   children,
   ...props
 }: HeadingProps) {
-  const Component = as || (`h${level}` as const);
+  const Component: React.ElementType = as ?? `h${(level ?? 1) as 1 | 2 | 3 | 4 | 5 | 6}`;
   
   return (
     <Component
@@ -109,7 +109,7 @@ const textStyles = cva(
 );
 
 export interface TextProps
-  extends React.HTMLAttributes<HTMLParagraphElement>,
+  extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof textStyles> {
   as?: 'p' | 'span' | 'div' | 'label';
 }
@@ -124,13 +124,14 @@ export function Text({
   children,
   ...props
 }: TextProps) {
+  const Element: React.ElementType = Component ?? 'p';
   return (
-    <Component
+    <Element
       className={twMerge(textStyles({ size, weight, variant, align }), className)}
       {...props}
     >
       {children}
-    </Component>
+    </Element>
   );
 }
 
@@ -156,7 +157,7 @@ export function Caption({
 }
 
 // Lead text component for introductory paragraphs
-export interface LeadProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+export interface LeadProps extends React.HTMLAttributes<HTMLElement> {}
 
 export function Lead({ className, children, ...props }: LeadProps) {
   return (

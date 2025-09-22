@@ -61,6 +61,15 @@ export function Card({
 }: CardProps) {
   const isInteractive = interactive || Boolean(onClick);
 
+  const handleKeyDown: React.KeyboardEventHandler<HTMLElement> | undefined = isInteractive
+    ? (event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && onClick) {
+          event.preventDefault();
+          onClick(event as unknown as React.MouseEvent<HTMLDivElement>);
+        }
+      }
+    : undefined;
+
   return (
     <Component
       className={twMerge(
@@ -75,16 +84,7 @@ export function Card({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
-      onKeyDown={
-        isInteractive
-          ? (e) => {
-              if ((e.key === 'Enter' || e.key === ' ') && onClick) {
-                e.preventDefault();
-                onClick(e as any);
-              }
-            }
-          : undefined
-      }
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {children}

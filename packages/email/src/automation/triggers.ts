@@ -253,7 +253,7 @@ export class APITrigger extends BaseTrigger {
 
 // Trigger factory
 export class TriggerFactory {
-  private static triggers = new Map<TriggerType, typeof BaseTrigger>([
+  private static triggers = new Map<TriggerType, new () => BaseTrigger>([
     ['user_signup', UserSignupTrigger],
     ['product_purchase', ProductPurchaseTrigger],
     ['cart_abandonment', CartAbandonmentTrigger],

@@ -1,11 +1,24 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { linearRegression, linearRegressionLine } from 'simple-statistics';
-import { subDays, startOfDay } from 'date-fns';
-import { 
-  PricingRecommendation, 
-  ProductData,
-  ConversionData 
-} from './types';
+import { linearRegression } from 'simple-statistics';
+import { subDays } from 'date-fns';
+import { PricingRecommendation } from './types';
+
+interface ProductRow {
+  id: string;
+  price: number;
+  category: string;
+  asin?: string | null;
+}
+
+interface PriceHistoryRow {
+  price: number;
+  timestamp: string;
+  conversions: number | null;
+}
+
+interface CompetitorPriceRow {
+  price: number | null;
+}
 
 export class PricingOptimizer {
   private supabase: SupabaseClient;
@@ -29,18 +42,20 @@ export class PricingOptimizer {
           .from('products')
           .select('*')
           .eq('id', productId)
-          .single();
+          .maybeSingle();
 
-        if (!product) continue;
+        const productRow = product as ProductRow | null;
+
+        if (!productRow) continue;
 
         // Get price history and performance
         const priceHistory = await this.fetchPriceHistory(productId);
         const elasticity = await this.calculatePriceElasticity(productId, priceHistory);
-        const competitorPrices = await this.fetchCompetitorPrices(product.category, product.asin);
+        const competitorPrices = await this.fetchCompetitorPrices(productRow.category, productRow.asin ?? undefined);
 
         // Calculate optimal price based on strategy
         const recommendedPrice = await this.calculateOptimalPrice(
-          product,
+          productRow,
           elasticity,
           competitorPrices,
           strategy
@@ -48,14 +63,14 @@ export class PricingOptimizer {
 
         // Estimate revenue impact
         const expectedRevenueLift = this.estimateRevenueLift(
-          product.price,
+          productRow.price,
           recommendedPrice,
           elasticity
         );
 
         recommendations.push({
           productId,
-          currentPrice: product.price,
+          currentPrice: productRow.price,
           recommendedPrice,
           elasticity,
           expectedRevenueLift,
@@ -89,19 +104,19 @@ export class PricingOptimizer {
         .from('products')
         .select('price')
         .eq('id', productId)
-        .single();
+        .maybeSingle();
 
       return [{
         date: new Date(),
-        price: product?.price || 0,
+        price: (product as ProductRow | null)?.price || 0,
         conversions: 0
       }];
     }
 
-    return data.map(d => ({
-      date: new Date(d.timestamp),
-      price: d.price,
-      conversions: d.conversions || 0
+    return data.map(row => ({
+      date: new Date(row.timestamp),
+      price: row.price,
+      conversions: row.conversions || 0
     }));
   }
 
@@ -162,7 +177,9 @@ export class PricingOptimizer {
       .neq('asin', asin || '')
       .limit(20);
 
-    const prices = competitors?.map(c => c.price).filter(p => p > 0) || [];
+    const prices = (competitors || [])
+      .map(entry => entry.price)
+      .filter((value): value is number => typeof value === 'number' && value > 0);
 
     // If we have external price monitoring data
     const { data: externalPrices } = await this.supabase
@@ -172,7 +189,11 @@ export class PricingOptimizer {
       .gte('timestamp', subDays(new Date(), 1).toISOString());
 
     if (externalPrices?.length) {
-      prices.push(...externalPrices.map(e => e.price));
+      prices.push(
+        ...externalPrices
+          .map(entry => entry.price)
+          .filter((value): value is number => typeof value === 'number' && value > 0)
+      );
     }
 
     // Cache for 1 hour
@@ -183,10 +204,10 @@ export class PricingOptimizer {
   }
 
   private async calculateOptimalPrice(
-    product: any,
+    product: ProductRow,
     elasticity: number,
     competitorPrices: number[],
-    strategy: string
+    strategy: 'maximize_revenue' | 'maximize_volume' | 'competitive'
   ): Promise<number> {
     const currentPrice = product.price;
     let optimalPrice = currentPrice;
@@ -200,7 +221,7 @@ export class PricingOptimizer {
     const maxCompetitorPrice = Math.max(...competitorPrices, currentPrice);
 
     switch (strategy) {
-      case 'maximize_revenue':
+      case 'maximize_revenue': {
         // Revenue = Price × Quantity
         // Optimal price using elasticity formula: P* = MC × (ε / (ε + 1))
         // Assuming MC ≈ 0.3 × current price for affiliate commission
@@ -212,19 +233,22 @@ export class PricingOptimizer {
           optimalPrice = currentPrice * 1.1;
         }
         break;
+      }
 
-      case 'maximize_volume':
+      case 'maximize_volume': {
         // Price below competitors to increase volume
         optimalPrice = Math.max(
           minCompetitorPrice * 0.95,
           currentPrice * 0.9
         );
         break;
+      }
 
-      case 'competitive':
+      case 'competitive': {
         // Match average competitor price
         optimalPrice = avgCompetitorPrice;
         break;
+      }
     }
 
     // Apply constraints
@@ -313,10 +337,12 @@ export class PricingOptimizer {
     const priceHistory = await this.fetchPriceHistory(productId);
     const elasticity = await this.calculatePriceElasticity(productId, priceHistory);
 
+    const durationFactor = Math.max(1, duration / 7);
+
     const results = testPrices.map(price => {
       const priceChange = (price - product.price) / product.price;
       const quantityChange = 1 + (priceChange * elasticity);
-      const estimatedConversions = Math.max(0, 100 * quantityChange); // Base 100 conversions
+      const estimatedConversions = Math.max(0, 100 * quantityChange * durationFactor);
       const revenue = price * estimatedConversions;
 
       return {

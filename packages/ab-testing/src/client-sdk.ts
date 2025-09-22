@@ -1,11 +1,24 @@
-import mitt from 'mitt';
+import mitt, { Handler } from 'mitt';
+import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   UserContext,
   Assignment,
   ExposureEvent,
-  ConversionEvent,
-  FeatureFlag
+  ConversionEvent
 } from './types.js';
+
+type ABTestingClientEvents = {
+  ready: undefined;
+  error: unknown;
+  assignment: { experimentId: string; assignment: Assignment };
+  flag: { flagId: string; value: boolean | unknown };
+  conversion: ConversionEvent;
+  track: { eventName: string; properties?: Record<string, unknown> };
+  exposure: ExposureEvent;
+  flush: { count: number };
+  user_update: UserContext;
+};
 
 export class ABTestingClient {
   private apiUrl: string;
@@ -15,7 +28,7 @@ export class ABTestingClient {
   private featureFlags: Map<string, boolean | unknown> = new Map();
   private eventQueue: Array<ExposureEvent | ConversionEvent> = [];
   private flushTimer?: NodeJS.Timeout;
-  private emitter = mitt();
+  private emitter = mitt<ABTestingClientEvents>();
   private initialized = false;
 
   constructor(config: ABTestingConfig) {
@@ -401,11 +414,17 @@ export class ABTestingClient {
   }
 
   // Event listeners
-  public on(event: string, handler: (...args: any[]) => void): void {
+  public on<K extends keyof ABTestingClientEvents>(
+    event: K,
+    handler: Handler<ABTestingClientEvents[K]>
+  ): void {
     this.emitter.on(event, handler);
   }
 
-  public off(event: string, handler: (...args: any[]) => void): void {
+  public off<K extends keyof ABTestingClientEvents>(
+    event: K,
+    handler: Handler<ABTestingClientEvents[K]>
+  ): void {
     this.emitter.off(event, handler);
   }
 
@@ -416,7 +435,7 @@ export class ABTestingClient {
     }
 
     return new Promise((resolve) => {
-      this.emitter.on('ready', resolve);
+      this.emitter.on('ready', () => resolve());
     });
   }
 
@@ -513,7 +532,7 @@ export function useABTesting(client: ABTestingClient) {
 interface VariantProps {
   experimentId: string;
   client: ABTestingClient;
-  children: (variant: string) => React.ReactNode;
+  children: (variant: string) => ReactNode;
 }
 
 export function Variant({ experimentId, client, children }: VariantProps) {
@@ -535,20 +554,6 @@ export function Variant({ experimentId, client, children }: VariantProps) {
 }
 
 // Helper functions for React
-export function useState(initial: any) {
-  // This would be imported from React in actual implementation
-  return [initial, (v: any) => {}];
-}
-
-export function useEffect(fn: any, deps: any) {
-  // This would be imported from React in actual implementation
-}
-
-export function useCallback(fn: any, deps: any) {
-  // This would be imported from React in actual implementation
-  return fn;
-}
-
 interface ABTestingConfig {
   apiUrl: string;
   apiKey: string;

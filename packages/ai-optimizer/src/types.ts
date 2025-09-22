@@ -23,7 +23,7 @@ export interface UserBehavior {
   duration?: number;
   deviceType?: string;
   referrer?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ConversionData {
@@ -103,13 +103,13 @@ export interface UserSegment {
 export interface ExperimentConfig {
   id: string;
   name: string;
-  type: 'pricing' | 'placement' | 'content' | 'ui';
+  type: 'pricing' | 'placement' | 'content' | 'ui' | 'multivariate';
   status: 'planning' | 'running' | 'completed' | 'failed';
   variants: Array<{
     id: string;
     name: string;
     allocation: number;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
   }>;
   metrics: string[];
   startDate: Date;
@@ -121,14 +121,16 @@ export interface ExperimentConfig {
 export interface ExperimentResult {
   experimentId: string;
   variantId: string;
-  metrics: Record<string, {
-    value: number;
-    lift: number;
-    confidence: number;
-    significant: boolean;
-  }>;
+  metrics: Record<string, Record<string, ExperimentMetricDetails>>;
   winner?: string;
   recommendation: string;
+}
+
+export interface ExperimentMetricDetails {
+  value: number;
+  lift: number;
+  confidence: number;
+  significant: boolean;
 }
 
 // Revenue Tracking
@@ -156,7 +158,7 @@ export interface ModelConfig {
   type: 'conversion' | 'pricing' | 'placement' | 'content';
   version: string;
   features: string[];
-  hyperparameters: Record<string, any>;
+  hyperparameters: Record<string, number | string | boolean | string[] | number[]>;
   performance: {
     accuracy?: number;
     mse?: number;
@@ -195,7 +197,7 @@ export interface AnalyticsEvent {
   userId?: string;
   value?: number;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Configuration

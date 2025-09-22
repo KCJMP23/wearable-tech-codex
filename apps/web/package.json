@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--require ./node-polyfill.cjs' next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run --root ../.. --config ../../vitest.config.ts"
   },
   "dependencies": {
     "@affiliate-factory/ab-testing": "workspace:*",

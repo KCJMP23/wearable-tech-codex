@@ -1,8 +1,6 @@
 import * as ss from 'simple-statistics';
 import {
   VariantResult,
-  MetricResult,
-  ExperimentResults,
   StatisticalTest,
   StatisticalError,
   Metric,
@@ -102,7 +100,6 @@ export class StatisticalAnalyzer {
     const uplift = ((variantRate - controlRate) / controlRate) * 100;
 
     // Calculate confidence intervals
-    const controlCI = this.proportionConfidenceInterval(controlConversions, controlTotal);
     const variantCI = this.proportionConfidenceInterval(variantConversions, variantTotal);
 
     // Calculate uplift confidence interval
@@ -224,25 +221,25 @@ export class StatisticalAnalyzer {
     }
 
     // Combine and rank all values
-    const combined = [
-      ...controlValues.map(v => ({ value: v, group: 'control' })),
-      ...variantValues.map(v => ({ value: v, group: 'variant' }))
+    const combined: RankedValue[] = [
+      ...controlValues.map(value => ({ value, group: 'control' as const })),
+      ...variantValues.map(value => ({ value, group: 'variant' as const }))
     ].sort((a, b) => a.value - b.value);
 
     // Assign ranks (handling ties)
     const ranks = this.assignRanks(combined.map(c => c.value));
-    combined.forEach((item, i) => {
-      (item as any).rank = ranks[i];
+    combined.forEach((item, index) => {
+      item.rank = ranks[index];
     });
 
     // Calculate U statistics
     const controlRankSum = combined
       .filter(c => c.group === 'control')
-      .reduce((sum, c) => sum + (c as any).rank, 0);
+      .reduce((sum, c) => sum + (c.rank ?? 0), 0);
 
     const variantRankSum = combined
       .filter(c => c.group === 'variant')
-      .reduce((sum, c) => sum + (c as any).rank, 0);
+      .reduce((sum, c) => sum + (c.rank ?? 0), 0);
 
     const n1 = controlValues.length;
     const n2 = variantValues.length;
@@ -508,9 +505,6 @@ export class StatisticalAnalyzer {
     controlN: number,
     variantN: number
   ): number {
-    const effectSize = (variantMean - controlMean) / 
-      Math.sqrt((controlStd * controlStd + variantStd * variantStd) / 2);
-    
     const se = Math.sqrt((controlStd * controlStd) / controlN + 
                         (variantStd * variantStd) / variantN);
     
@@ -709,14 +703,20 @@ export class StatisticalAnalyzer {
     const d = shape - 1/3;
     const c = 1 / Math.sqrt(9 * d);
     
-    while (true) {
+    let sample: number | undefined;
+    while (sample === undefined) {
       const z = this.normalSample();
       const v = Math.pow(1 + c * z, 3);
       const u = Math.random();
-      
-      if (u < 1 - 0.0331 * z * z * z * z) return d * v;
-      if (Math.log(u) < 0.5 * z * z + d * (1 - v + Math.log(v))) return d * v;
+
+      if (u < 1 - 0.0331 * z * z * z * z) {
+        sample = d * v;
+      } else if (Math.log(u) < 0.5 * z * z + d * (1 - v + Math.log(v))) {
+        sample = d * v;
+      }
     }
+
+    return sample;
   }
 
   private normalSample(): number {
@@ -800,9 +800,8 @@ export class StatisticalAnalyzer {
     const maxIterations = 100;
     const epsilon = 1e-10;
     
-    let m = 1;
     let m2 = 2;
-    let aa = a;
+    let aa = 0;
     let c = 1;
     let d = 1 - (a + b) * x / (a + 1);
     if (Math.abs(d) < epsilon) d = epsilon;
@@ -861,4 +860,10 @@ export class StatisticalAnalyzer {
     const t = x + g + 0.5;
     return Math.sqrt(2 * Math.PI) + Math.log(a) - t + (x + 0.5) * Math.log(t);
   }
+}
+
+interface RankedValue {
+  value: number;
+  group: 'control' | 'variant';
+  rank?: number;
 }

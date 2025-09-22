@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { loadEnv } from './env';
-import type { NewsletterCampaign } from './types';
+import { loadEnv } from './env.js';
+import type { NewsletterCampaign } from './types.js';
 
 let resendClient: Resend | null = null;
 
@@ -25,7 +25,7 @@ export async function sendNewsletter(campaign: NewsletterCampaign): Promise<stri
     headers: {
       'X-Affiliate-Tenant': campaign.tenantId
     }
-  });
+  }) as { id?: string };
 
-  return response.id;
+  return response.id ?? '';
 }

@@ -344,12 +344,15 @@ export class WaitAction extends BaseAction {
     }
 
     // Convert to minutes
-    const multiplier = {
+    const multipliers = {
       minutes: 1,
       hours: 60,
       days: 60 * 24,
       weeks: 60 * 24 * 7,
-    }[unit];
+    } as const;
+
+    const normalizedUnit = String(unit).toLowerCase() as keyof typeof multipliers;
+    const multiplier = multipliers[normalizedUnit];
 
     if (!multiplier) {
       return {
@@ -366,7 +369,7 @@ export class WaitAction extends BaseAction {
       data: {
         delayMinutes,
         amount,
-        unit,
+        unit: normalizedUnit,
       },
     };
   }
@@ -469,7 +472,7 @@ export class ConditionAction extends BaseAction {
 
 // Action factory
 export class ActionFactory {
-  private static actions = new Map<string, typeof BaseAction>([
+  private static actions = new Map<string, new () => BaseAction>([
     ['send_email', SendEmailAction],
     ['add_to_list', AddToListAction],
     ['remove_from_list', RemoveFromListAction],

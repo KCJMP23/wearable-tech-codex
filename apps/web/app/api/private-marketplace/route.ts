@@ -1,7 +1,13 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { SupabaseServer } from '@affiliate-factory/sdk'
+import { ensureInternalApiAccess } from '@/lib/security/internal-auth'
 
 export async function GET(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request)
+  if (unauthorized) {
+    return unauthorized
+  }
+
   try {
     const supabase = await SupabaseServer.createClient()
     const { searchParams } = new URL(request.url)
@@ -44,19 +50,24 @@ export async function GET(request: NextRequest) {
     const { data: products, error } = await query
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return Response.json({ products })
+    return NextResponse.json({ products })
   } catch (error) {
     console.error('Error fetching private marketplace products:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = ensureInternalApiAccess(request)
+  if (unauthorized) {
+    return unauthorized
+  }
+
   try {
-    const supabase = createClient()
+    const supabase = await SupabaseServer.createClient()
     const body = await request.json()
 
     const {
@@ -102,12 +113,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return Response.json({ product }, { status: 201 })
+    return NextResponse.json({ product }, { status: 201 })
   } catch (error) {
     console.error('Error creating private marketplace product:', error)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

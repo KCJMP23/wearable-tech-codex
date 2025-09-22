@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ensureAffiliateTag } from './amazon';
+import { ensureAffiliateTag } from './amazon.js';
 
 describe('ensureAffiliateTag', () => {
   it('appends tag when missing', () => {

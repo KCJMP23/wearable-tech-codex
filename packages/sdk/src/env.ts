@@ -29,6 +29,7 @@ const envSchema = z.object({
   MAKE_BLOG_WEBHOOK_SECRET: z.string().min(1),
   MAKE_PRODUCT_WEBHOOK_SECRET: z.string().min(1),
   MAKE_IMAGE_WEBHOOK_SECRET: z.string().min(1),
+  INTERNAL_API_SECRET: z.string().min(1),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),

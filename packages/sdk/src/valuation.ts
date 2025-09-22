@@ -10,7 +10,7 @@
  * @module valuation
  */
 
-import { createClient } from './supabase/client';
+import { createClient } from './supabase/client.js';
 
 // =============================================================================
 // Types
@@ -504,7 +504,17 @@ export class SiteValuator {
         .order('sale_date', { ascending: false })
         .limit(10);
 
-      return (comparables || []).map(comp => ({
+      const comparableRows = (comparables ?? []) as Array<{
+        domain: string;
+        niche: string;
+        monthly_revenue: number;
+        monthly_pageviews: number;
+        sale_price: number;
+        sale_date: string;
+        source?: string;
+      }>;
+
+      return comparableRows.map(comp => ({
         domain: comp.domain,
         niche: comp.niche,
         monthlyRevenue: comp.monthly_revenue,
@@ -553,7 +563,8 @@ export class SiteValuator {
    * Save valuation to database
    */
   async saveValuation(tenantId: string, metrics: ValuationMetrics, result: ValuationResult): Promise<string> {
-    const { data, error } = await this.supabase
+    const supabase = this.supabase as any;
+    const { data, error } = await supabase
       .from('site_valuations')
       .insert({
         tenant_id: tenantId,

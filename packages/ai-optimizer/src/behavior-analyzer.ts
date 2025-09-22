@@ -1,11 +1,75 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { KMeans } from 'ml-kmeans';
+import kmeans from 'ml-kmeans';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
-import { 
-  UserBehavior, 
-  UserSegment,
-  AnalyticsEvent 
-} from './types';
+import { UserSegment } from './types';
+
+type InteractionAction = 'view' | 'click' | 'add_to_cart' | 'purchase';
+
+interface InteractionRecord {
+  user_id?: string;
+  timestamp: string | Date;
+  action: InteractionAction;
+  value?: number | null;
+  product_category?: string | null;
+  device_type?: string | null;
+}
+
+type InteractionSessions = InteractionRecord[][];
+
+export interface BrowsingPatterns {
+  avgSessionDuration: number;
+  pagesPerSession: number;
+  bounceRate: number;
+  preferredDevices: string[];
+  peakActivityHours: number[];
+}
+
+export interface ConversionFunnel {
+  viewToClick: number;
+  clickToCart: number;
+  cartToPurchase: number;
+}
+
+export interface UserPatterns {
+  preferredCategories: string[];
+  purchaseFrequency: number;
+  avgOrderValue: number;
+  browsingPatterns: BrowsingPatterns;
+  conversionFunnel: ConversionFunnel;
+}
+
+export interface UserAnalysis {
+  patterns: UserPatterns;
+  segment: string;
+  churnRisk: number;
+  ltv: number;
+}
+
+interface KMeansResult {
+  clusters: number[];
+  centroids: Array<{ centroid: number[]; error: number; size: number }>;
+  iterations: number;
+  converged: boolean;
+}
+
+type KMeansFunction = (
+  data: number[][],
+  clusters: number,
+  options?: Record<string, unknown>
+) => KMeansResult;
+
+interface AnalyticsSummaryRow {
+  total_spent?: number | null;
+  purchase_count?: number | null;
+  avg_order_value?: number | null;
+  days_since_last_purchase?: number | null;
+  session_count?: number | null;
+  avg_session_duration?: number | null;
+  category_diversity?: number | null;
+  conversion_rate?: number | null;
+  top_categories?: string[] | null;
+  primary_device?: string | null;
+}
 
 export class BehaviorAnalyzer {
   private supabase: SupabaseClient;
@@ -19,28 +83,7 @@ export class BehaviorAnalyzer {
   async analyzeUserBehavior(
     userId: string,
     timeframe: number = 30 // days
-  ): Promise<{
-    patterns: {
-      preferredCategories: string[];
-      purchaseFrequency: number;
-      avgOrderValue: number;
-      browsingPatterns: {
-        avgSessionDuration: number;
-        pagesPerSession: number;
-        bounceRate: number;
-        preferredDevices: string[];
-        peakActivityHours: number[];
-      };
-      conversionFunnel: {
-        viewToClick: number;
-        clickToCart: number;
-        cartToPurchase: number;
-      };
-    };
-    segment: string;
-    churnRisk: number;
-    ltv: number;
-  }> {
+  ): Promise<UserAnalysis> {
     const startDate = subDays(new Date(), timeframe);
 
     // Fetch user interactions
@@ -51,21 +94,23 @@ export class BehaviorAnalyzer {
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true });
 
-    if (!interactions?.length) {
+    const interactionRecords: InteractionRecord[] = (interactions ?? []) as InteractionRecord[];
+
+    if (!interactionRecords.length) {
       return this.getDefaultUserAnalysis();
     }
 
     // Analyze patterns
-    const patterns = await this.extractUserPatterns(interactions, userId);
+    const patterns = this.extractUserPatterns(interactionRecords);
     
     // Determine segment
     const segment = await this.assignUserSegment(userId, patterns);
     
     // Calculate churn risk
-    const churnRisk = await this.calculateChurnRisk(userId, interactions);
+    const churnRisk = await this.calculateChurnRisk(interactionRecords);
     
     // Calculate LTV
-    const ltv = await this.calculateLTV(userId, patterns);
+    const ltv = this.calculateLTV(patterns, churnRisk);
 
     return {
       patterns,
@@ -75,10 +120,9 @@ export class BehaviorAnalyzer {
     };
   }
 
-  private async extractUserPatterns(
-    interactions: any[],
-    userId: string
-  ): Promise<any> {
+  private extractUserPatterns(
+    interactions: InteractionRecord[],
+  ): UserPatterns {
     // Category preferences
     const categoryCount = new Map<string, number>();
     const sessions = this.groupIntoSessions(interactions);
@@ -147,11 +191,11 @@ export class BehaviorAnalyzer {
   }
 
   private groupIntoSessions(
-    interactions: any[],
+    interactions: InteractionRecord[],
     sessionTimeout: number = 30 // minutes
-  ): any[][] {
-    const sessions: any[][] = [];
-    let currentSession: any[] = [];
+  ): InteractionSessions {
+    const sessions: InteractionSessions = [];
+    let currentSession: InteractionRecord[] = [];
     let lastTimestamp: Date | null = null;
 
     for (const interaction of interactions) {
@@ -176,13 +220,7 @@ export class BehaviorAnalyzer {
     return sessions;
   }
 
-  private analyzeBrowsingPatterns(sessions: any[][]): {
-    avgSessionDuration: number;
-    pagesPerSession: number;
-    bounceRate: number;
-    preferredDevices: string[];
-    peakActivityHours: number[];
-  } {
+  private analyzeBrowsingPatterns(sessions: InteractionSessions): BrowsingPatterns {
     if (sessions.length === 0) {
       return {
         avgSessionDuration: 0,
@@ -260,18 +298,21 @@ export class BehaviorAnalyzer {
     minUsers: number = 100
   ): Promise<UserSegment[]> {
     // Fetch user data for clustering
-    const { data: users } = await this.supabase
+    const { data: userRows } = await this.supabase
       .from('user_analytics_summary')
       .select('*')
       .limit(10000);
 
-    if (!users || users.length < minUsers) {
+    const userSummaries = (userRows ?? []) as AnalyticsSummaryRow[];
+    const totalUsers = userSummaries.length;
+
+    if (totalUsers < minUsers) {
       console.warn('Insufficient users for segmentation');
       return [];
     }
 
     // Prepare features for clustering
-    const features = users.map(user => [
+    const features = userSummaries.map(user => [
       user.total_spent || 0,
       user.purchase_count || 0,
       user.avg_order_value || 0,
@@ -286,17 +327,18 @@ export class BehaviorAnalyzer {
     const normalized = this.normalizeFeatures(features);
 
     // Perform k-means clustering
-    const k = Math.min(5, Math.floor(users.length / 20));
-    const kmeans = new KMeans(normalized, k, {
+    const k = Math.max(1, Math.min(5, Math.floor(totalUsers / 20) || 1));
+    const runKMeans = kmeans as unknown as KMeansFunction;
+    const result = runKMeans(normalized, k, {
       initialization: 'kmeans++',
       maxIterations: 100
-    });
+    }) as KMeansResult;
 
     // Create segment definitions
     const segments: UserSegment[] = [];
     
     for (let i = 0; i < k; i++) {
-      const clusterUsers = users.filter((_, idx) => kmeans.clusters[idx] === i);
+      const clusterUsers = userSummaries.filter((_, idx) => result.clusters[idx] === i);
       
       if (clusterUsers.length === 0) continue;
 
@@ -339,7 +381,7 @@ export class BehaviorAnalyzer {
   }
 
   private async defineSegment(
-    users: any[],
+    users: AnalyticsSummaryRow[],
     segmentId: string
   ): Promise<UserSegment> {
     // Calculate segment characteristics
@@ -369,9 +411,15 @@ export class BehaviorAnalyzer {
 
     // Determine price range
     const prices = users.map(u => u.avg_order_value || 0).sort((a, b) => a - b);
+    const lowerIndex = prices.length
+      ? Math.floor(Math.min(prices.length - 1, Math.max(0, prices.length * 0.25)))
+      : 0;
+    const upperIndex = prices.length
+      ? Math.floor(Math.min(prices.length - 1, Math.max(0, prices.length * 0.75)))
+      : 0;
     const priceRange: [number, number] = [
-      prices[Math.floor(prices.length * 0.25)],
-      prices[Math.floor(prices.length * 0.75)]
+      prices[lowerIndex] ?? 0,
+      prices[upperIndex] ?? 0
     ];
 
     // Get common devices
@@ -440,7 +488,7 @@ export class BehaviorAnalyzer {
 
   async assignUserSegment(
     userId: string,
-    patterns: any
+    patterns: UserPatterns
   ): Promise<string> {
     // Check if user already assigned
     const cached = this.userSegmentMap.get(userId);
@@ -470,21 +518,22 @@ export class BehaviorAnalyzer {
   }
 
   private calculateSegmentMatchScore(
-    patterns: any,
+    patterns: UserPatterns,
     segment: UserSegment
   ): number {
     let score = 0;
 
     // AOV similarity
+    const avgOrderValue = Math.max(1, segment.characteristics.avgOrderValue);
     const aovDiff = Math.abs(patterns.avgOrderValue - segment.characteristics.avgOrderValue);
-    score += Math.max(0, 1 - aovDiff / segment.characteristics.avgOrderValue) * 0.3;
+    score += Math.max(0, 1 - aovDiff / avgOrderValue) * 0.3;
 
     // Purchase frequency similarity
     const freqDiff = Math.abs(patterns.purchaseFrequency - segment.characteristics.purchaseFrequency);
     score += Math.max(0, 1 - freqDiff / Math.max(1, segment.characteristics.purchaseFrequency)) * 0.3;
 
     // Category overlap
-    const categoryOverlap = patterns.preferredCategories.filter((cat: string) =>
+    const categoryOverlap = patterns.preferredCategories.filter(cat =>
       segment.characteristics.preferredCategories.includes(cat)
     ).length;
     score += (categoryOverlap / Math.max(1, patterns.preferredCategories.length)) * 0.2;
@@ -499,8 +548,7 @@ export class BehaviorAnalyzer {
   }
 
   async calculateChurnRisk(
-    userId: string,
-    interactions: any[]
+    interactions: InteractionRecord[]
   ): Promise<number> {
     // Get last purchase date
     const lastPurchase = interactions
@@ -557,23 +605,18 @@ export class BehaviorAnalyzer {
     return Math.min(1, risk);
   }
 
-  async calculateLTV(
-    userId: string,
-    patterns: any
-  ): Promise<number> {
-    // Simple LTV calculation
-    // LTV = AOV × Purchase Frequency × Expected Lifetime
+  private calculateLTV(
+    patterns: UserPatterns,
+    churnRisk: number
+  ): number {
     const aov = patterns.avgOrderValue || 0;
     const frequency = patterns.purchaseFrequency || 0;
-    
-    // Estimate lifetime based on churn risk
-    const churnRisk = await this.calculateChurnRisk(userId, []);
-    const expectedLifetime = (1 - churnRisk) * 24; // months
+    const expectedLifetime = Math.max(0, 1 - churnRisk) * 24; // months
 
     return aov * frequency * expectedLifetime;
   }
 
-  private getDefaultUserAnalysis(): any {
+  private getDefaultUserAnalysis(): UserAnalysis {
     return {
       patterns: {
         preferredCategories: [],

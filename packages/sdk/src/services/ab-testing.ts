@@ -1,5 +1,5 @@
-import { createClient } from '../supabase/server';
-import type { Database } from '../database.types';
+import { createClient } from '../supabase/server.js';
+import type { Database } from '../database.types.js';
 
 type ABTestVariant = Database['public']['Tables']['ab_test_variants']['Row'];
 type ABTestConversion = Database['public']['Tables']['ab_test_conversions']['Row'];

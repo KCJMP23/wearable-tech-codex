@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { loadEnv } from './env';
+import { loadEnv } from './env.js';
 
 const QUEUE_KEY = 'affiliate-factory:tasks';
 let redisClient: Redis | null = null;

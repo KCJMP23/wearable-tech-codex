@@ -182,9 +182,9 @@ export function ComparisonTable({
   };
 
   const renderProductHeader = (product: ComparisonProduct) => {
-    const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-    const discountPercentage = hasDiscount 
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
+    const hasDiscount = typeof product.originalPrice === 'number' && product.originalPrice > product.price;
+    const discountPercentage = hasDiscount && product.originalPrice
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
       : 0;
 
     return (
@@ -255,7 +255,9 @@ export function ComparisonTable({
           {hasDiscount && (
             <div className="space-y-1">
               <div className="text-sm text-primary-500 line-through">
-                {formatPrice(product.originalPrice!, product.currency)}
+              {product.originalPrice !== undefined
+                ? formatPrice(product.originalPrice, product.currency)
+                : null}
               </div>
               <Badge variant="success" size="sm">
                 -{discountPercentage}% OFF
@@ -330,7 +332,7 @@ export function ComparisonTable({
           >
             {isBest && (
               <div className="absolute top-1 right-1">
-                <Badge variant="success" size="xs">
+                <Badge variant="success" size="sm">
                   Best
                 </Badge>
               </div>
@@ -419,7 +421,7 @@ export function ComparisonTable({
               <span>Comparing {products.length} products</span>
               {highlightBest && (
                 <span className="flex items-center gap-1">
-                  <Badge variant="success" size="xs">Best</Badge>
+                  <Badge variant="success" size="sm">Best</Badge>
                   indicates best value
                 </span>
               )}

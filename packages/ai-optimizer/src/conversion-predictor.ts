@@ -1,20 +1,76 @@
-import { Matrix } from 'ml-matrix';
-import { SVM } from 'ml-regression';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { subDays, startOfDay, endOfDay } from 'date-fns';
-import { 
-  ConversionData, 
-  ConversionPrediction, 
-  ProductData,
+import { subDays, startOfDay } from 'date-fns';
+import {
+  ConversionPrediction,
   ModelConfig,
-  ConversionTrainingSchema 
 } from './types';
+import {
+  LogisticRegression,
+  LogisticRegressionOptions,
+  LogisticRegressionState
+} from './utils/logistic-regression.js';
+
+interface ProductRecord {
+  id: string;
+  price: number;
+  rating?: number | null;
+  reviews?: number | null;
+  category: string;
+  created_at: string;
+  images?: string[] | null;
+  has_video?: boolean | null;
+  discount_percentage?: number | null;
+  description?: string | null;
+  features?: string[] | null;
+}
+
+interface ConversionAnalyticsRecord {
+  product_id: string;
+  timestamp: string | Date;
+  clicks?: number | null;
+  conversions?: number | null;
+  revenue?: number | null;
+  views?: number | null;
+  products: ProductRecord;
+}
+
+interface SupabaseConversionRecord extends Omit<ConversionAnalyticsRecord, 'products'> {
+  products: ProductRecord | ProductRecord[];
+}
+
+interface CategoryStatRow {
+  clicks?: number | null;
+  conversions?: number | null;
+}
+
+const FEATURE_INDEX = {
+  price: 0,
+  rating: 1,
+  reviews: 2,
+  categoryAvgCvr: 3,
+  hourOfDay: 4,
+  dayOfWeek: 5,
+  isWeekend: 6,
+  competitorCount: 7,
+  pricePercentile: 8,
+  daysSinceLaunch: 9,
+  contentQuality: 10,
+  imageCount: 11,
+  hasVideo: 12,
+  discountPercentage: 13,
+  seasonalFactor: 14,
+} as const;
 
 export class ConversionPredictor {
   private supabase: SupabaseClient;
-  private model: SVM | null = null;
+  private model: LogisticRegression | null = null;
   private modelConfig: ModelConfig;
   private scaler: { mean: number[], std: number[] } = { mean: [], std: [] };
+  private readonly modelOptions: LogisticRegressionOptions = {
+    learningRate: 0.15,
+    iterations: 300,
+    l2: 0.01
+  };
 
   constructor(supabaseUrl: string, supabaseKey: string) {
     this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -47,11 +103,20 @@ export class ConversionPredictor {
   async initialize(): Promise<void> {
     // Try to load existing model from localStorage
     try {
+      if (typeof localStorage === 'undefined') {
+        console.log('localStorage unavailable; training conversion model fresh');
+        await this.trainModel();
+        return;
+      }
+
       const modelData = localStorage.getItem('conversion-predictor-model');
       const scalerData = localStorage.getItem('conversion-predictor-scaler');
       
       if (modelData && scalerData) {
-        // Note: SVM models would need custom serialization in a real implementation
+        const parsed = JSON.parse(modelData) as { state: LogisticRegressionState } | null;
+        if (parsed?.state) {
+          this.model = LogisticRegression.fromJSON(parsed.state, this.modelOptions);
+        }
         this.scaler = JSON.parse(scalerData);
         console.log('Loaded existing conversion model');
       } else {
@@ -64,9 +129,9 @@ export class ConversionPredictor {
     }
   }
 
-  private async fetchTrainingData(days: number = 30): Promise<{ 
-    features: number[][], 
-    labels: number[] 
+  private async fetchTrainingData(days: number = 30): Promise<{
+    features: number[][];
+    labels: number[];
   }> {
     const startDate = startOfDay(subDays(new Date(), days));
     
@@ -81,6 +146,7 @@ export class ConversionPredictor {
         revenue,
         timestamp,
         products!inner(
+          id,
           price,
           rating,
           reviews,
@@ -100,20 +166,41 @@ export class ConversionPredictor {
     const features: number[][] = [];
     const labels: number[] = [];
 
-    for (const record of conversions || []) {
-      const cvr = record.clicks > 0 ? record.conversions / record.clicks : 0;
+    const typedConversions = (conversions ?? []) as SupabaseConversionRecord[];
+
+    for (const raw of typedConversions) {
+      const product = Array.isArray(raw.products) ? raw.products[0] : raw.products;
+      if (!product) continue;
+
+      const record: ConversionAnalyticsRecord = {
+        ...raw,
+        products: {
+          ...product,
+          id: product.id,
+          category: product.category,
+          price: product.price,
+          created_at: product.created_at
+        }
+      };
+
+      const clicks = record.clicks ?? 0;
+      const conversionsCount = record.conversions ?? 0;
       const feature = await this.extractFeatures(record);
-      
+
       features.push(feature);
-      labels.push(cvr);
+      labels.push(clicks > 0 ? conversionsCount / clicks : 0);
     }
 
     return { features, labels };
   }
 
-  private async extractFeatures(record: any): Promise<number[]> {
+  private async extractFeatures(record: ConversionAnalyticsRecord): Promise<number[]> {
     const timestamp = new Date(record.timestamp);
     const product = record.products;
+
+    if (!product) {
+      return new Array(this.modelConfig.features.length).fill(0);
+    }
     
     // Calculate category average CVR
     const { data: categoryStats } = await this.supabase
@@ -122,7 +209,7 @@ export class ConversionPredictor {
       .eq('category', product.category)
       .gte('timestamp', subDays(timestamp, 7).toISOString());
     
-    const categoryAvgCvr = this.calculateAvgCVR(categoryStats || []);
+    const categoryAvgCvr = this.calculateAvgCVR((categoryStats ?? []) as CategoryStatRow[]);
     
     // Calculate competitor metrics
     const { data: competitors } = await this.supabase
@@ -130,11 +217,14 @@ export class ConversionPredictor {
       .select('price')
       .eq('category', product.category)
       .neq('id', record.product_id);
-    
-    const competitorCount = competitors?.length || 0;
+
+    const competitorPrices = (competitors ?? [])
+      .map(entry => entry.price ?? undefined)
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    const competitorCount = competitorPrices.length;
     const pricePercentile = this.calculatePricePercentile(
-      product.price, 
-      competitors?.map(c => c.price) || []
+      product.price,
+      competitorPrices
     );
     
     // Time-based features
@@ -156,8 +246,8 @@ export class ConversionPredictor {
     
     return [
       product.price,
-      product.rating || 0,
-      Math.log1p(product.reviews || 0),
+      product.rating ?? 0,
+      Math.log1p(product.reviews ?? 0),
       categoryAvgCvr,
       hourOfDay / 24,
       dayOfWeek / 7,
@@ -166,19 +256,19 @@ export class ConversionPredictor {
       pricePercentile,
       Math.log1p(daysLaunched),
       contentQuality,
-      product.images?.length || 0,
+      product.images?.length ?? 0,
       product.has_video ? 1 : 0,
-      product.discount_percentage || 0,
+      product.discount_percentage ?? 0,
       seasonalFactor
     ];
   }
 
-  private calculateAvgCVR(stats: any[]): number {
+  private calculateAvgCVR(stats: CategoryStatRow[]): number {
     if (!stats.length) return 0;
     
-    const totals = stats.reduce((acc, curr) => ({
-      clicks: acc.clicks + (curr.clicks || 0),
-      conversions: acc.conversions + (curr.conversions || 0)
+    const totals = stats.reduce<{ clicks: number; conversions: number }>((acc, curr) => ({
+      clicks: acc.clicks + (curr.clicks ?? 0),
+      conversions: acc.conversions + (curr.conversions ?? 0)
     }), { clicks: 0, conversions: 0 });
     
     return totals.clicks > 0 ? totals.conversions / totals.clicks : 0;
@@ -189,10 +279,10 @@ export class ConversionPredictor {
     
     const sorted = [...competitorPrices, price].sort((a, b) => a - b);
     const index = sorted.indexOf(price);
-    return index / sorted.length;
+    return sorted.length > 0 ? index / sorted.length : 0.5;
   }
 
-  private estimateContentQuality(product: any): number {
+  private estimateContentQuality(product: ProductRecord): number {
     let score = 0;
     
     if (product.description) {
@@ -228,6 +318,12 @@ export class ConversionPredictor {
     console.log('Training conversion prediction model...');
     
     const { features, labels } = await this.fetchTrainingData(90);
+
+    if (features.length === 0 || labels.length === 0) {
+      console.warn('No training data available for conversion model');
+      this.model = null;
+      return;
+    }
     
     if (features.length < 100) {
       console.warn('Insufficient training data, using synthetic augmentation');
@@ -238,14 +334,10 @@ export class ConversionPredictor {
     this.scaler = this.fitScaler(features);
     const normalizedFeatures = this.transform(features, this.scaler);
     
-    // Train SVM model
-    this.model = new SVM(normalizedFeatures, labels, {
-      kernel: 'rbf',
-      gamma: 0.1,
-      C: 1,
-      epsilon: 0.01
-    });
-    
+    // Train logistic regression model
+    this.model = new LogisticRegression(this.modelOptions);
+    this.model.train(normalizedFeatures, labels);
+
     // Update model config with basic performance metrics
     this.modelConfig.performance = {
       accuracy: 0.85, // Placeholder - would calculate from validation set
@@ -259,7 +351,11 @@ export class ConversionPredictor {
     console.log('Model training completed');
   }
 
-  private fitScaler(data: number[][]): { mean: number[], std: number[] } {
+  private fitScaler(data: number[][]): { mean: number[]; std: number[] } {
+    if (data.length === 0 || data[0]?.length === 0) {
+      return { mean: [], std: [] };
+    }
+
     const numFeatures = data[0].length;
     const mean = new Array(numFeatures).fill(0);
     const std = new Array(numFeatures).fill(0);
@@ -287,9 +383,16 @@ export class ConversionPredictor {
     return { mean, std };
   }
 
-  private transform(data: number[][], scaler: { mean: number[], std: number[] }): number[][] {
-    return data.map(row => 
-      row.map((val, i) => (val - scaler.mean[i]) / scaler.std[i])
+  private transform(data: number[][], scaler: { mean: number[]; std: number[] }): number[][] {
+    if (!scaler.mean.length || !scaler.std.length) {
+      return data;
+    }
+
+    return data.map(row =>
+      row.map((val, i) => {
+        const denominator = scaler.std[i] || 1;
+        return (val - scaler.mean[i]) / denominator;
+      })
     );
   }
 
@@ -297,7 +400,11 @@ export class ConversionPredictor {
     if (!this.model) {
       await this.initialize();
     }
-    
+
+    if (!this.model) {
+      return [];
+    }
+
     const predictions: ConversionPrediction[] = [];
     
     for (const productId of productIds) {
@@ -306,25 +413,29 @@ export class ConversionPredictor {
         .from('products')
         .select('*')
         .eq('id', productId)
-        .single();
+        .single<ProductRecord>();
       
       if (error || !product) continue;
       
       // Extract features
-      const features = await this.extractFeatures({
+      const featuresRecord: ConversionAnalyticsRecord = {
         product_id: productId,
         products: product,
-        timestamp: new Date()
-      });
+        timestamp: new Date().toISOString(),
+      };
+
+      const features = await this.extractFeatures(featuresRecord);
       
       // Normalize
-      const normalized = this.transform([features], this.scaler)[0];
+      const normalized = this.transform([features], this.scaler)[0] ?? features;
       
       // Predict using SVM
-      const cvr = this.model ? this.model.predict([normalized])[0] : 0.02;
-      
+      const [predicted] = this.model.predict([normalized]);
+      const cvrRaw = typeof predicted === 'number' ? predicted : 0.02;
+      const cvr = Math.min(Math.max(cvrRaw, 0), 1);
+
       // Calculate feature importance (simplified)
-      const factors = this.calculateFactors(features, cvr);
+      const factors = this.calculateFactors(features);
       
       // Generate recommendation
       const recommendation = this.generateRecommendation(cvr, factors);
@@ -341,14 +452,14 @@ export class ConversionPredictor {
     return predictions;
   }
 
-  private calculateFactors(features: number[], cvr: number): ConversionPrediction['factors'] {
+  private calculateFactors(features: number[]): ConversionPrediction['factors'] {
     // Simplified feature importance based on feature values
     return {
-      price: 1 - (features[0] / 1000), // Normalize price impact
-      rating: features[1] / 5,
-      seasonality: features[14],
-      competition: 1 - features[8], // Price percentile inverted
-      content: features[10]
+      price: Math.max(0, 1 - (features[FEATURE_INDEX.price] ?? 0) / 1000),
+      rating: Math.min(1, (features[FEATURE_INDEX.rating] ?? 0) / 5),
+      seasonality: features[FEATURE_INDEX.seasonalFactor] ?? 0,
+      competition: Math.max(0, 1 - (features[FEATURE_INDEX.pricePercentile] ?? 0)),
+      content: features[FEATURE_INDEX.contentQuality] ?? 0
     };
   }
 
@@ -389,20 +500,19 @@ export class ConversionPredictor {
   }
 
   async saveModel(): Promise<void> {
-    if (!this.model) return;
-    
-    // Save model parameters to localStorage (simplified serialization)
-    localStorage.setItem('conversion-predictor-model', JSON.stringify({
-      type: 'svm',
-      trained: true
-    }));
-    
+    if (!this.model || typeof localStorage === 'undefined') return;
+
+    const state = this.model.toJSON();
+
+    // Save model parameters to localStorage
+    localStorage.setItem('conversion-predictor-model', JSON.stringify({ state }));
+
     // Save scaler to localStorage
     localStorage.setItem('conversion-predictor-scaler', JSON.stringify(this.scaler));
-    
+
     // Save config to localStorage
     localStorage.setItem('conversion-predictor-config', JSON.stringify(this.modelConfig));
-    
+
     console.log('Model saved successfully');
   }
 
@@ -416,20 +526,24 @@ export class ConversionPredictor {
     if (!this.model) {
       await this.initialize();
     }
-    
+
+    if (!this.model) {
+      return { accuracy: 0, mse: 0, r2: 0 };
+    }
+
     // Fetch test data (last 7 days)
     const { features, labels } = await this.fetchTrainingData(7);
-    
+
     if (features.length === 0) {
       return { accuracy: 0, mse: 0, r2: 0 };
     }
-    
+
     // Normalize
     const normalized = this.transform(features, this.scaler);
-    
+
     // Get predictions
-    const predictions = this.model ? this.model.predict(normalized) : [];
-    
+    const predictions = this.model.predict(normalized);
+
     // Calculate metrics
     const mse = this.calculateMSE(labels, predictions);
     const r2 = this.calculateR2(labels, predictions);
@@ -473,7 +587,11 @@ export class ConversionPredictor {
     const ssTot = actual.reduce((sum, val) => 
       sum + Math.pow(val - mean, 2), 0
     );
-    
+
+    if (ssTot === 0) {
+      return 0;
+    }
+
     return 1 - (ssRes / ssTot);
   }
 }

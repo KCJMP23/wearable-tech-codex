@@ -12,7 +12,7 @@ export interface CopyButtonProps extends Omit<ButtonProps, 'onClick' | 'leftIcon
   copiedLabel?: string;
   timeout?: number;
   showIcon?: boolean;
-  onCopy?: (value: string) => void;
+  onCopied?: (value: string) => void;
 }
 
 export function CopyButton({
@@ -21,7 +21,7 @@ export function CopyButton({
   copiedLabel = 'Copied!',
   timeout = 2000,
   showIcon = true,
-  onCopy,
+  onCopied,
   variant = 'ghost',
   size = 'sm',
   className,
@@ -33,7 +33,7 @@ export function CopyButton({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      onCopy?.(value);
+      onCopied?.(value);
       
       setTimeout(() => {
         setCopied(false);
@@ -227,7 +227,7 @@ export function CopyCodeBlock({
   label="Copy Command"
   variant="outline"
   size="sm"
-  onCopy={(value) => console.log('Copied:', value)}
+  onCopied={(value) => console.log('Copied:', value)}
 />
 
 <p>

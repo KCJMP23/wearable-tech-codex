@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Campaign, CampaignType, Subscriber, EmailAnalytics } from './types';
 import { EmailService } from './email-service';
 import { SegmentService } from './segmentation/segment-service';
@@ -31,18 +31,27 @@ export interface ABTestResult {
   confidence: number;
 }
 
+type Client = SupabaseClient<any, 'public', any>;
+
+interface CampaignServiceOptions {
+  supabase?: Client;
+  segmentService?: SegmentService;
+}
+
 export class CampaignService {
-  private supabase;
+  private supabase: Client;
   private emailService: EmailService;
   private segmentService: SegmentService;
 
-  constructor(emailService: EmailService) {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  constructor(emailService: EmailService, options: CampaignServiceOptions = {}) {
+    this.supabase =
+      options.supabase ??
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
     this.emailService = emailService;
-    this.segmentService = new SegmentService();
+    this.segmentService = options.segmentService ?? new SegmentService(this.supabase);
   }
 
   async createCampaign(params: {
@@ -497,8 +506,10 @@ export class CampaignService {
         // Apply segment filters using SegmentService
         for (const segmentId of segmentIds) {
           const segmentRecipients = await this.segmentService.getSegmentSubscribers(segmentId);
-          const segmentIds = segmentRecipients.map(r => r.id);
-          query = query.in('id', segmentIds);
+          const segmentSubscriberIds = segmentRecipients.subscribers.map(r => r.id);
+          if (segmentSubscriberIds.length > 0) {
+            query = query.in('id', segmentSubscriberIds);
+          }
         }
       }
 
@@ -513,7 +524,7 @@ export class CampaignService {
   private async sendRegularCampaign(
     campaign: any,
     recipients: Subscriber[]
-  ): Promise<{ sent: number; failed: number }> {
+  ): Promise<{ sent: number; failed: number; abTestResults?: ABTestResult[] }> {
     let sent = 0;
     let failed = 0;
 

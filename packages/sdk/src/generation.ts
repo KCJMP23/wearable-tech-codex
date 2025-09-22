@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { loadEnv } from './env';
+import { loadEnv } from './env.js';
 
 const cached = {
   openai: null as OpenAI | null,

@@ -60,6 +60,11 @@ export class AutomationEngine {
         return;
       }
 
+      if (!context.subscriberId) {
+        console.warn('Cannot evaluate automation without subscriberId');
+        return;
+      }
+
       // Check if subscriber is already in this automation
       const existingExecution = await this.getActiveExecution(automation.id, context.subscriberId);
       if (existingExecution) {
@@ -69,7 +74,7 @@ export class AutomationEngine {
       // Create new automation execution
       const executionId = await this.createAutomationExecution(
         automation.id,
-        context.subscriberId!,
+        context.subscriberId,
         context.data
       );
 

@@ -23,6 +23,12 @@ export class MailgunProvider extends BaseEmailProvider {
     try {
       const recipients = Array.isArray(message.to) ? message.to.join(',') : message.to;
       
+      const attachments = message.attachments?.map(att => new this.mailgun.Attachment({
+        data: Buffer.from(att.content, 'base64'),
+        filename: att.filename,
+        contentType: att.contentType,
+      }));
+
       const data = {
         from: `${this.config.fromName} <${this.config.fromEmail}>`,
         to: recipients,
@@ -35,15 +41,11 @@ export class MailgunProvider extends BaseEmailProvider {
           'TRACKING_ID'
         ),
         text: message.text,
-        attachment: message.attachments?.map(att => ({
-          data: Buffer.from(att.content, 'base64'),
-          filename: att.filename,
-          contentType: att.contentType,
-        })),
+        attachment: attachments,
         'o:tag': message.tags,
         'o:tracking': this.config.trackOpens,
-        'o:tracking-clicks': this.config.trackClicks ? 'yes' : 'no',
-        'o:tracking-opens': this.config.trackOpens ? 'yes' : 'no',
+        'o:tracking-clicks': (this.config.trackClicks ? 'yes' : 'no') as 'yes' | 'no',
+        'o:tracking-opens': (this.config.trackOpens ? 'yes' : 'no') as 'yes' | 'no',
         ...this.addMailgunHeaders(message.headers),
         ...this.addMailgunVariables(message.metadata),
       };

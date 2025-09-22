@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { AffiliateNetworksView } from './AffiliateNetworksView';
+import { AffiliateNetworksView, type AffiliateNetwork } from './AffiliateNetworksView';
 
 
 // Mock data for affiliate networks - in production, fetch from database
-const AFFILIATE_NETWORKS = [
+const AFFILIATE_NETWORKS: AffiliateNetwork[] = [
   {
     id: 'amazon',
     name: 'Amazon Associates',

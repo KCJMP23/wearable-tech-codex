@@ -13,7 +13,7 @@ import {
   type Tables,
   type TablesInsert,
   type TablesUpdate,
-} from '../index';
+} from '../index.js';
 import type {
   Brand,
   BrandPartnership,
@@ -32,7 +32,7 @@ import type {
   InstallAppRequest,
   CreateNotificationCampaignRequest,
   RegisterDeviceRequest,
-} from '../types';
+} from '../types.js';
 
 // =============================================================================
 // Brand & Partnership Management Service

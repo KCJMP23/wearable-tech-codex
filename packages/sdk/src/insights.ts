@@ -1,5 +1,5 @@
-import { withServiceClient } from './supabase';
-import type { InsightCard } from './types';
+import { withServiceClient } from './supabase.js';
+import type { InsightCard } from './types.js';
 
 interface InsightOptions {
   tenantId: string;

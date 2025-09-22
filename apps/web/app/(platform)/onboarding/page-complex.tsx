@@ -298,7 +298,7 @@ export default function FlexibleOnboardingPage() {
             )}
 
             {step === 'complete' && (
-              <Card className="p-8 text-center">
+              <div className="p-8 text-center bg-white rounded-lg border border-gray-200 shadow-md">
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-4">Your Site is Ready!</h2>
                 <p className="text-gray-600 mb-6">
@@ -369,6 +369,5 @@ export default function FlexibleOnboardingPage() {
         </div>
       </div>
     </div>
-                </Card>
   );
 }

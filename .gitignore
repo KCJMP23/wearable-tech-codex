@@ -70,7 +70,7 @@ temp/
 *.tmp
 
 # Lock files (keep package-lock.json if using npm)
-pnpm-lock.yaml
+# pnpm-lock.yaml is tracked for deployment consistency
 yarn.lock
 
 # Scripts

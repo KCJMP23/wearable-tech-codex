@@ -1,4 +1,8 @@
+// Import early polyfill first to fix SSR build issues
+import '../lib/early-polyfill';
 import './globals.css';
+// Add global polyfills for SSR compatibility
+import '../lib/polyfills';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import Script from 'next/script';
@@ -7,7 +11,6 @@ import { ChatbotDock } from './components/ChatbotDock';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { QueryProvider } from '../providers/QueryProvider';
 import { ConsoleErrorSuppressor } from '../components/ConsoleErrorSuppressor';
-import { ClientWrapper } from '../components/ClientWrapper';
 import { preloadingConfig } from '../config/performance';
 
 export const metadata: Metadata = {
@@ -26,8 +29,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        {/* Fix exports is not defined error */}
-        <script src="/exports-polyfill.js" />
+        {/* Fix exports is not defined error - load immediately */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              if (typeof window !== 'undefined') {
+                if (typeof window.exports === 'undefined') window.exports = {};
+                if (typeof window.module === 'undefined') window.module = { exports: {} };
+                if (typeof window.require === 'undefined') window.require = function() { return {}; };
+              }
+            })();
+          `
+        }} />
         
         {/* Preconnect to critical origins */}
         {preloadingConfig.preconnect.map((link) => (
@@ -58,16 +71,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="antialiased">
         <ConsoleErrorSuppressor />
-        <ClientWrapper>
-          <ErrorBoundary>
-            <QueryProvider>
-              <ThemeProvider>
-                {children}
-                <ChatbotDock />
-              </ThemeProvider>
-            </QueryProvider>
-          </ErrorBoundary>
-        </ClientWrapper>
+        <ErrorBoundary>
+          <QueryProvider>
+            <ThemeProvider>
+              {children}
+              <ChatbotDock />
+            </ThemeProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

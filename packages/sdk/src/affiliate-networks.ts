@@ -19,7 +19,7 @@ import {
   type SyncOperation,
   type ManagerConfig,
 } from '@affiliate-factory/integrations';
-import { createClient } from './supabase/client';
+import { createClient } from './supabase/client.js';
 import { encryptCredentials, decryptCredentials } from '@affiliate-factory/integrations';
 
 /**

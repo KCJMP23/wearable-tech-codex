@@ -1,10 +1,58 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { differenceInDays, addDays } from 'date-fns';
-import { 
-  ExperimentConfig, 
+import {
+  ExperimentConfig,
   ExperimentResult,
   AnalyticsEvent 
 } from './types';
+
+interface ExperimentTrackingRow {
+  experiment_id: string;
+  variant_id: string;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  revenue: number;
+  metrics?: Record<string, number> | null;
+}
+
+interface ExperimentAssignmentRow {
+  variant_id: string;
+}
+
+interface ExperimentTableRow {
+  id: string;
+  name: string;
+  type: ExperimentConfig['type'];
+  status: ExperimentConfig['status'];
+  variants: ExperimentConfig['variants'];
+  metrics: ExperimentConfig['metrics'];
+  start_date: string;
+  end_date?: string | null;
+  sample_size: number;
+  confidence: number;
+  results?: ExperimentResult;
+}
+
+interface ExperimentEventUpdates {
+  impressions?: number;
+  clicks?: number;
+  conversions?: number;
+  revenue?: number;
+}
+
+interface VariantAggregateMetrics {
+  conversionRate: number;
+  clickRate: number;
+  averageOrderValue: number;
+  revenuePerImpression: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  revenue: number;
+}
+
+type FactorDefinition = { name: string; levels: unknown[] };
 
 export class ExperimentRunner {
   private supabase: SupabaseClient;
@@ -134,10 +182,12 @@ export class ExperimentRunner {
       .select('variant_id')
       .eq('experiment_id', experimentId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
-      return existing.variant_id;
+    const existingAssignment = existing as ExperimentAssignmentRow | null;
+
+    if (existingAssignment) {
+      return existingAssignment.variant_id;
     }
 
     // Assign based on allocation
@@ -182,12 +232,14 @@ export class ExperimentRunner {
       .select('variant_id')
       .eq('experiment_id', experimentId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (!assignment) return;
+    const resolvedAssignment = assignment as ExperimentAssignmentRow | null;
+
+    if (!resolvedAssignment) return;
 
     // Update tracking metrics
-    const updates: any = {};
+    const updates: ExperimentEventUpdates = {};
     
     switch (event.type) {
       case 'impression':
@@ -209,7 +261,7 @@ export class ExperimentRunner {
       .from('experiment_events')
       .insert({
         experiment_id: experimentId,
-        variant_id: assignment.variant_id,
+        variant_id: resolvedAssignment.variant_id,
         user_id: userId,
         event_type: event.type,
         event_value: event.value,
@@ -218,28 +270,30 @@ export class ExperimentRunner {
       });
 
     // Update aggregate metrics
-    await this.updateVariantMetrics(experimentId, assignment.variant_id, updates);
+    await this.updateVariantMetrics(experimentId, resolvedAssignment.variant_id, updates);
   }
 
   private async updateVariantMetrics(
     experimentId: string,
     variantId: string,
-    updates: any
+    updates: ExperimentEventUpdates
   ): Promise<void> {
     const { data: current } = await this.supabase
       .from('experiment_tracking')
       .select('*')
       .eq('experiment_id', experimentId)
       .eq('variant_id', variantId)
-      .single();
+      .maybeSingle();
 
-    if (!current) return;
+    const currentMetrics = current as ExperimentTrackingRow | null;
+
+    if (!currentMetrics) return;
 
     const newMetrics = {
-      impressions: current.impressions + (updates.impressions || 0),
-      clicks: current.clicks + (updates.clicks || 0),
-      conversions: current.conversions + (updates.conversions || 0),
-      revenue: current.revenue + (updates.revenue || 0)
+      impressions: currentMetrics.impressions + (updates.impressions ?? 0),
+      clicks: currentMetrics.clicks + (updates.clicks ?? 0),
+      conversions: currentMetrics.conversions + (updates.conversions ?? 0),
+      revenue: currentMetrics.revenue + (updates.revenue ?? 0)
     };
 
     await this.supabase
@@ -258,22 +312,22 @@ export class ExperimentRunner {
       .select('*')
       .eq('experiment_id', experimentId);
 
-    if (!tracking || tracking.length < 2) {
+    const trackingRows = (tracking ?? []) as ExperimentTrackingRow[];
+
+    if (trackingRows.length < 2) {
       throw new Error('Insufficient data for analysis');
     }
 
     // Calculate metrics for each variant
-    const variantMetrics: Record<string, any> = {};
-    let controlVariant: any = null;
+    const variantMetrics: Record<string, VariantAggregateMetrics> = {};
+    let controlVariant: ExperimentTrackingRow | undefined;
 
-    for (const variant of tracking) {
+    for (const variant of trackingRows) {
       const metrics = this.calculateVariantMetrics(variant);
       variantMetrics[variant.variant_id] = metrics;
 
       // Assume first variant is control
-      if (!controlVariant) {
-        controlVariant = variant;
-      }
+      controlVariant ??= variant;
     }
 
     // Perform statistical significance testing
@@ -284,35 +338,41 @@ export class ExperimentRunner {
       recommendation: ''
     };
 
-    for (const variantId in variantMetrics) {
+    if (!controlVariant) {
+      return results;
+    }
+
+    for (const variantId of Object.keys(variantMetrics)) {
       if (variantId === controlVariant.variant_id) continue;
 
       const control = variantMetrics[controlVariant.variant_id];
       const variant = variantMetrics[variantId];
-
-      results.metrics[variantId] = {};
+      const variantResult: ExperimentResult['metrics'][string] = {};
 
       for (const metric of experiment.metrics) {
-        const controlValue = control[metric];
-        const variantValue = variant[metric];
+        const controlValue = control[metric as keyof VariantAggregateMetrics] ?? 0;
+        const variantValue = variant[metric as keyof VariantAggregateMetrics] ?? 0;
 
-        const lift = controlValue > 0 
+        const lift = controlValue > 0
           ? ((variantValue - controlValue) / controlValue) * 100
           : 0;
 
+        const variantRow = trackingRows.find(t => t.variant_id === variantId);
         const significance = await this.calculateSignificance(
           controlVariant,
-          tracking.find(t => t.variant_id === variantId),
+          variantRow,
           metric
         );
 
-        results.metrics[variantId][metric] = {
+        variantResult[metric] = {
           value: variantValue,
           lift,
           confidence: significance.confidence,
           significant: significance.significant
         };
       }
+
+      results.metrics[variantId] = variantResult;
     }
 
     // Determine winner
@@ -322,8 +382,17 @@ export class ExperimentRunner {
     return results;
   }
 
-  private calculateVariantMetrics(tracking: any): Record<string, number> {
-    const metrics: Record<string, number> = {};
+  private calculateVariantMetrics(tracking: ExperimentTrackingRow): VariantAggregateMetrics {
+    const metrics: VariantAggregateMetrics = {
+      conversionRate: 0,
+      clickRate: 0,
+      averageOrderValue: 0,
+      revenuePerImpression: 0,
+      impressions: tracking.impressions,
+      clicks: tracking.clicks,
+      conversions: tracking.conversions,
+      revenue: tracking.revenue,
+    };
 
     // Calculate conversion rate
     metrics.conversionRate = tracking.impressions > 0
@@ -345,19 +414,18 @@ export class ExperimentRunner {
       ? tracking.revenue / tracking.impressions
       : 0;
 
-    // Add raw metrics
-    metrics.impressions = tracking.impressions;
-    metrics.conversions = tracking.conversions;
-    metrics.revenue = tracking.revenue;
-
     return metrics;
   }
 
   private async calculateSignificance(
-    control: any,
-    variant: any,
+    control: ExperimentTrackingRow,
+    variant: ExperimentTrackingRow | undefined,
     metric: string
   ): Promise<{ significant: boolean; confidence: number }> {
+    if (!variant) {
+      return { significant: false, confidence: 0 };
+    }
+
     // Use Chi-square test for conversion metrics
     if (metric === 'conversionRate' || metric === 'clickRate') {
       return this.chiSquareTest(control, variant, metric);
@@ -372,8 +440,8 @@ export class ExperimentRunner {
   }
 
   private chiSquareTest(
-    control: any,
-    variant: any,
+    control: ExperimentTrackingRow,
+    variant: ExperimentTrackingRow,
     metric: string
   ): { significant: boolean; confidence: number } {
     const controlSuccess = metric === 'conversionRate' 
@@ -386,12 +454,20 @@ export class ExperimentRunner {
       : variant.clicks;
     const variantTotal = variant.impressions;
 
+    if (controlTotal === 0 || variantTotal === 0) {
+      return { significant: false, confidence: 0 };
+    }
+
     // Calculate chi-square statistic
     const pooledProbability = (controlSuccess + variantSuccess) / 
                              (controlTotal + variantTotal);
     
     const controlExpected = controlTotal * pooledProbability;
     const variantExpected = variantTotal * pooledProbability;
+
+    if (controlExpected === 0 || variantExpected === 0) {
+      return { significant: false, confidence: 0 };
+    }
 
     const chiSquare = 
       Math.pow(controlSuccess - controlExpected, 2) / controlExpected +
@@ -407,8 +483,8 @@ export class ExperimentRunner {
   }
 
   private tTest(
-    control: any,
-    variant: any,
+    control: ExperimentTrackingRow,
+    variant: ExperimentTrackingRow,
     metric: string
   ): { significant: boolean; confidence: number } {
     // Simplified t-test implementation
@@ -439,9 +515,13 @@ export class ExperimentRunner {
 
     // Calculate t-statistic
     const pooledStd = Math.sqrt(
-      (Math.pow(controlStd, 2) / controlN) +
-      (Math.pow(variantStd, 2) / variantN)
+      (Math.pow(controlStd, 2) / Math.max(1, controlN)) +
+      (Math.pow(variantStd, 2) / Math.max(1, variantN))
     );
+
+    if (pooledStd === 0) {
+      return { significant: false, confidence: 0 };
+    }
 
     const tStatistic = Math.abs((variantMean - controlMean) / pooledStd);
 
@@ -499,7 +579,7 @@ export class ExperimentRunner {
     } else {
       const winnerMetrics = results.metrics[results.winner];
       const significantMetrics = Object.entries(winnerMetrics)
-        .filter(([_, data]) => data.significant && data.lift > 0)
+        .filter(([, data]) => data.significant && data.lift > 0)
         .map(([metric, data]) => `${metric} (+${data.lift.toFixed(1)}%)`);
 
       recommendations.push(
@@ -553,23 +633,25 @@ export class ExperimentRunner {
       .from('experiments')
       .select('*')
       .eq('id', experimentId)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
+    const experimentRow = data as ExperimentTableRow | null;
+
+    if (error || !experimentRow) {
       throw new Error('Experiment not found');
     }
 
     return {
-      id: data.id,
-      name: data.name,
-      type: data.type,
-      status: data.status,
-      variants: data.variants,
-      metrics: data.metrics,
-      startDate: new Date(data.start_date),
-      endDate: data.end_date ? new Date(data.end_date) : undefined,
-      sampleSize: data.sample_size,
-      confidence: data.confidence
+      id: experimentRow.id,
+      name: experimentRow.name,
+      type: experimentRow.type,
+      status: experimentRow.status,
+      variants: experimentRow.variants,
+      metrics: experimentRow.metrics,
+      startDate: new Date(experimentRow.start_date),
+      endDate: experimentRow.end_date ? new Date(experimentRow.end_date) : undefined,
+      sampleSize: experimentRow.sample_size,
+      confidence: experimentRow.confidence
     };
   }
 
@@ -579,7 +661,7 @@ export class ExperimentRunner {
       .select('*')
       .eq('status', 'running');
 
-    return (data || []).map(exp => ({
+    return ((data as ExperimentTableRow[]) || []).map((exp) => ({
       id: exp.id,
       name: exp.name,
       type: exp.type,
@@ -595,7 +677,7 @@ export class ExperimentRunner {
 
   async scheduleMutliVariateTest(
     name: string,
-    factors: Array<{ name: string; levels: any[] }>,
+    factors: FactorDefinition[],
     metrics: string[],
     duration: number // days
   ): Promise<string[]> {
@@ -610,7 +692,7 @@ export class ExperimentRunner {
       
       const config = await this.createExperiment({
         name: `${name}_variant_${i}`,
-        type: 'multivariate' as any,
+        type: 'multivariate',
         variants: [
           { id: 'control', name: 'Control', allocation: 0.5, config: {} },
           { id: `variant_${i}`, name: `Variant ${i}`, allocation: 0.5, config: combination }
@@ -629,13 +711,13 @@ export class ExperimentRunner {
   }
 
   private generateCombinations(
-    factors: Array<{ name: string; levels: any[] }>
-  ): any[] {
+    factors: FactorDefinition[]
+  ): Record<string, unknown>[] {
     if (factors.length === 0) return [{}];
 
     const [first, ...rest] = factors;
     const restCombinations = this.generateCombinations(rest);
-    const combinations: any[] = [];
+    const combinations: Record<string, unknown>[] = [];
 
     for (const level of first.levels) {
       for (const combo of restCombinations) {

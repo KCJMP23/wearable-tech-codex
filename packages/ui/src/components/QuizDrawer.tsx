@@ -1,8 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import type { Quiz } from '@affiliate-factory/sdk';
 import { Button } from './Button';
+
+interface QuizChoice {
+  id: string;
+  label: string;
+  value: string;
+  next?: string | null;
+}
+
+interface QuizSchemaNode {
+  id: string;
+  question: string;
+  type: 'single' | 'multi' | 'scale';
+  choices: QuizChoice[];
+}
+
+interface Quiz {
+  id: string;
+  tenantId: string;
+  title: string;
+  schema: QuizSchemaNode[];
+  active: boolean;
+}
 
 interface QuizDrawerProps {
   quiz: Quiz;
@@ -40,12 +61,12 @@ export function QuizDrawer({ quiz, onSubmit }: QuizDrawerProps) {
               </Button>
             </div>
             <ol className="mt-6 space-y-6">
-              {quiz.schema.map((question, index) => (
+              {quiz.schema.map((question: Quiz['schema'][number], index: number) => (
                 <li key={question.id} className="space-y-3">
                   <p className="text-sm font-semibold uppercase tracking-wide text-amber-600">Step {index + 1}</p>
                   <h3 className="text-lg font-semibold text-neutral-900">{question.question}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {question.choices.map((choice) => {
+                    {question.choices.map((choice: Quiz['schema'][number]['choices'][number]) => {
                       const selected = answers[question.id];
                       const isSelected = Array.isArray(selected)
                         ? selected.includes(choice.value)

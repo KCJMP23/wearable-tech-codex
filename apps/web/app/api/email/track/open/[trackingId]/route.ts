@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { trackingId: string } }
+  context: { params: Promise<{ trackingId: string }> }
 ) {
-  const { trackingId } = params;
+  const { trackingId } = await context.params;
 
   try {
     const supabase = createClient(

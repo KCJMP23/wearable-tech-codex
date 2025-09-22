@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { EmailAnalytics } from './types';
 
 export interface EmailMetrics {
@@ -152,13 +152,15 @@ export interface TenantAnalytics {
 }
 
 export class EmailAnalyticsService {
-  private supabase;
+  private supabase: SupabaseClient<any, 'public', any>;
 
-  constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  constructor(supabaseClient?: SupabaseClient<any, 'public', any>) {
+    this.supabase =
+      supabaseClient ??
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
   }
 
   async getCampaignAnalytics(
@@ -225,17 +227,19 @@ export class EmailAnalyticsService {
         .select('*')
         .eq('subscriber_id', subscriberId);
 
+      const analyticsEvents = Array.isArray(analytics) ? analytics : [];
+
       // Calculate engagement metrics
-      const totalEmails = analytics?.filter(a => a.event === 'sent').length || 0;
-      const totalOpens = analytics?.filter(a => a.event === 'opened').length || 0;
-      const totalClicks = analytics?.filter(a => a.event === 'clicked').length || 0;
+      const totalEmails = analyticsEvents.filter(a => a.event === 'sent').length;
+      const totalOpens = analyticsEvents.filter(a => a.event === 'opened').length;
+      const totalClicks = analyticsEvents.filter(a => a.event === 'clicked').length;
       
       const uniqueOpens = new Set(
-        analytics?.filter(a => a.event === 'opened').map(a => a.campaign_id)
+        analyticsEvents.filter(a => a.event === 'opened').map(a => a.campaign_id)
       ).size;
       
       const uniqueClicks = new Set(
-        analytics?.filter(a => a.event === 'clicked').map(a => a.campaign_id)
+        analyticsEvents.filter(a => a.event === 'clicked').map(a => a.campaign_id)
       ).size;
 
       const openRate = totalEmails > 0 ? (uniqueOpens / totalEmails) * 100 : 0;
@@ -247,7 +251,7 @@ export class EmailAnalyticsService {
         clickRate,
         totalOpens,
         totalClicks,
-        daysSinceLastOpen: this.getDaysSinceLastActivity(analytics, 'opened'),
+        daysSinceLastOpen: this.getDaysSinceLastActivity(analyticsEvents, 'opened'),
       });
 
       // Get purchase data
@@ -256,15 +260,17 @@ export class EmailAnalyticsService {
         .select('*')
         .eq('subscriber_id', subscriberId);
 
-      const totalPurchases = purchases?.length || 0;
-      const totalRevenue = purchases?.reduce((sum, p) => sum + (p.total || 0), 0) || 0;
+      const purchaseRows = Array.isArray(purchases) ? purchases : [];
+
+      const totalPurchases = purchaseRows.length;
+      const totalRevenue = purchaseRows.reduce((sum, p) => sum + (p.total || 0), 0);
       const averageOrderValue = totalPurchases > 0 ? totalRevenue / totalPurchases : 0;
 
       // Get behavioral insights
-      const lastOpenDate = this.getLastActivityDate(analytics, 'opened');
-      const lastClickDate = this.getLastActivityDate(analytics, 'clicked');
-      const averageTimeToOpen = this.calculateAverageTimeToOpen(analytics);
-      const { preferredSendDay, preferredSendTime } = this.calculatePreferredTiming(analytics);
+      const lastOpenDate = this.getLastActivityDate(analyticsEvents, 'opened');
+      const lastClickDate = this.getLastActivityDate(analyticsEvents, 'clicked');
+      const averageTimeToOpen = this.calculateAverageTimeToOpen(analyticsEvents);
+      const { preferredSendDay, preferredSendTime } = this.calculatePreferredTiming(analyticsEvents);
 
       // Get segments and tags
       const { data: segmentMemberships } = await this.supabase
@@ -272,24 +278,30 @@ export class EmailAnalyticsService {
         .select('segment:email_segments(name)')
         .eq('subscriber_id', subscriberId);
 
-      const segments = segmentMemberships?.map(m => m.segment?.name).filter(Boolean) || [];
+      const membershipRows = Array.isArray(segmentMemberships) ? segmentMemberships : [];
+      const segments = membershipRows
+        .map(m => {
+          const segment = Array.isArray(m.segment) ? m.segment[0] : m.segment;
+          return segment?.name as string | undefined;
+        })
+        .filter((name): name is string => Boolean(name));
 
       // Calculate lifecycle stage and risk score
       const lifecycleStage = this.calculateLifecycleStage({
         openRate,
         clickRate,
-        daysSinceLastOpen: this.getDaysSinceLastActivity(analytics, 'opened'),
+        daysSinceLastOpen: this.getDaysSinceLastActivity(analyticsEvents, 'opened'),
         totalPurchases,
-        daysSinceLastPurchase: purchases?.[0] ? 
-          Math.floor((Date.now() - new Date(purchases[0].created_at).getTime()) / (1000 * 60 * 60 * 24)) : 
+        daysSinceLastPurchase: purchaseRows[0] ? 
+          Math.floor((Date.now() - new Date(purchaseRows[0].created_at).getTime()) / (1000 * 60 * 60 * 24)) : 
           Infinity,
       });
 
       const riskScore = this.calculateRiskScore({
         openRate,
         clickRate,
-        daysSinceLastOpen: this.getDaysSinceLastActivity(analytics, 'opened'),
-        engagementTrend: this.calculateEngagementTrend(analytics),
+        daysSinceLastOpen: this.getDaysSinceLastActivity(analyticsEvents, 'opened'),
+        engagementTrend: this.calculateEngagementTrend(analyticsEvents),
       });
 
       return {
@@ -313,7 +325,7 @@ export class EmailAnalyticsService {
         totalPurchases,
         totalRevenue,
         averageOrderValue,
-        lastPurchaseDate: purchases?.[0] ? new Date(purchases[0].created_at) : undefined,
+        lastPurchaseDate: purchaseRows[0] ? new Date(purchaseRows[0].created_at) : undefined,
         segments,
         tags: subscriber.tags || [],
         lifecycleStage,
@@ -843,20 +855,45 @@ export class EmailAnalyticsService {
 
   // Additional helper methods for tenant analytics
   private async calculateTenantMetrics(tenantId: string, dateRange: { start: Date; end: Date }): Promise<EmailMetrics> {
+    const { data: campaignRows } = await this.supabase
+      .from('email_campaigns')
+      .select('id')
+      .eq('tenant_id', tenantId);
+
+    const campaignIds = (campaignRows ?? []).map(row => row.id);
+    if (campaignIds.length === 0) {
+      return this.getEmptyMetrics();
+    }
+
     const { data: analytics } = await this.supabase
       .from('email_analytics')
       .select('event, campaign_id')
+      .in('campaign_id', campaignIds)
       .gte('timestamp', dateRange.start.toISOString())
-      .lte('timestamp', dateRange.end.toISOString())
-      .in('campaign_id', 
-        this.supabase
-          .from('email_campaigns')
-          .select('id')
-          .eq('tenant_id', tenantId)
-      );
+      .lte('timestamp', dateRange.end.toISOString());
 
-    // Calculate metrics similar to campaign analytics but aggregated
-    return this.getEmptyMetrics(); // Placeholder
+    const events = Array.isArray(analytics) ? analytics : [];
+
+    // Aggregate similar to campaign analytics; for now return placeholder metrics.
+    if (!events.length) {
+      return this.getEmptyMetrics();
+    }
+
+    const metrics = this.getEmptyMetrics();
+    metrics.sent = events.filter(e => e.event === 'sent').length;
+    metrics.delivered = events.filter(e => e.event === 'delivered').length;
+    metrics.opened = events.filter(e => e.event === 'opened').length;
+    metrics.clicked = events.filter(e => e.event === 'clicked').length;
+    metrics.bounced = events.filter(e => e.event === 'bounced').length;
+    metrics.complained = events.filter(e => e.event === 'complained').length;
+    metrics.unsubscribed = events.filter(e => e.event === 'unsubscribed').length;
+
+    metrics.openRate = metrics.sent > 0 ? (metrics.opened / metrics.sent) * 100 : 0;
+    metrics.clickRate = metrics.sent > 0 ? (metrics.clicked / metrics.sent) * 100 : 0;
+    metrics.bounceRate = metrics.sent > 0 ? (metrics.bounced / metrics.sent) * 100 : 0;
+    metrics.unsubscribeRate = metrics.sent > 0 ? (metrics.unsubscribed / metrics.sent) * 100 : 0;
+
+    return metrics;
   }
 
   private async getSubscriberGrowth(tenantId: string, dateRange: { start: Date; end: Date }) {

@@ -38,7 +38,7 @@ export class ContentScorer {
       this.calculateReadability(content),
       this.analyzeSentiment(content),
       this.extractKeywords(content),
-      this.calculateTopicRelevance(content, contentType)
+      this.calculateTopicRelevance(content)
     ]);
 
     // Predict conversion impact
@@ -69,7 +69,7 @@ export class ContentScorer {
 
   private async predictEngagement(
     content: string,
-    type: string
+    type: ContentPerformance['type']
   ): Promise<number> {
     // Use OpenAI to analyze content quality and engagement potential
     try {
@@ -209,7 +209,6 @@ export class ContentScorer {
 
   private async calculateTopicRelevance(
     content: string,
-    type: string
   ): Promise<number> {
     // Fetch trending topics
     const { data: trendingTopics } = await this.supabase
@@ -242,9 +241,9 @@ export class ContentScorer {
   ): Promise<number> {
     // Analyze conversion-driving elements
     const conversionFactors = await this.analyzeConversionFactors(content);
-    
+
     // Weight factors based on content type
-    let weights = {
+    const weights = {
       engagement: 0.2,
       sentiment: 0.1,
       cta: 0.3,
@@ -261,7 +260,7 @@ export class ContentScorer {
       weights.cta = 0.2;
     }
 
-    const score = 
+    const score =
       engagement * weights.engagement +
       Math.max(0, sentiment) * weights.sentiment +
       conversionFactors.cta * weights.cta +

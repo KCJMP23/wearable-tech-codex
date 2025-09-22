@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { CampaignService } from '@affiliate-factory/email';
 import { EmailService } from '@affiliate-factory/email';
-import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rate-limit';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { requireTenantContext } from '@/lib/api/tenant-context';
 
 // Rate limiting
 const limiter = rateLimit({
@@ -16,56 +10,19 @@ const limiter = rateLimit({
   uniqueTokenPerInterval: 500,
 });
 
-async function getTenantId(request: NextRequest): Promise<string | null> {
-  const headersList = headers();
-  const tenantSlug = headersList.get('x-tenant-slug');
-  
-  if (!tenantSlug) return null;
-
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', tenantSlug)
-    .single();
-
-  return tenant?.id || null;
-}
-
-async function checkAuth(request: NextRequest): Promise<{ userId: string; tenantId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.substring(7);
-  const { data: { user } } = await supabase.auth.getUser(token);
-  
-  if (!user) return null;
-
-  const tenantId = await getTenantId(request);
-  if (!tenantId) return null;
-
-  // Verify user has access to this tenant
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenantId)
-    .single();
-
-  if (!membership) return null;
-
-  return { userId: user.id, tenantId };
-}
-
 export async function GET(request: NextRequest) {
+  let applyCookiesRef: ((response: NextResponse) => NextResponse) | null = null;
   try {
     await limiter.check(request);
 
-    const auth = await checkAuth(request);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { context, error: contextError } = await requireTenantContext(request);
+    if (!context) {
+      return contextError!;
     }
+
+    const { supabase, tenantId, applyCookies } = context;
+    applyCookiesRef = applyCookies;
+    const json = (body: unknown, init?: ResponseInit) => applyCookies(NextResponse.json(body, init));
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -80,7 +37,7 @@ export async function GET(request: NextRequest) {
         *,
         stats:email_campaign_stats(*)
       `)
-      .eq('tenant_id', auth.tenantId)
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -98,14 +55,14 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     query = query.range(offset, offset + limit - 1);
 
-    const { data: campaigns, error, count } = await query;
+    const { data: campaigns, error: queryError, count } = await query;
 
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    if (queryError) {
+      console.error('Database error:', queryError);
+      return json({ error: 'Database error' }, { status: 500 });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       campaigns: campaigns || [],
       pagination: {
         page,
@@ -114,24 +71,33 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit),
       },
     });
+
+    return applyCookies(response);
   } catch (error) {
     if (error instanceof Error && error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      const response = NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      return applyCookiesRef ? applyCookiesRef(response) : response;
     }
 
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return applyCookiesRef ? applyCookiesRef(response) : response;
   }
 }
 
 export async function POST(request: NextRequest) {
+  let applyCookiesRef: ((response: NextResponse) => NextResponse) | null = null;
   try {
     await limiter.check(request);
 
-    const auth = await checkAuth(request);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { context, error: contextError } = await requireTenantContext(request);
+    if (!context) {
+      return contextError!;
     }
+
+    const { supabase, tenantId, applyCookies } = context;
+    applyCookiesRef = applyCookies;
+    const json = (body: unknown, init?: ResponseInit) => applyCookies(NextResponse.json(body, init));
 
     const body = await request.json();
     
@@ -154,10 +120,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name || !type || !subject || !fromName || !fromEmail || !htmlContent || !listIds?.length) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Initialize services
@@ -168,13 +131,13 @@ export async function POST(request: NextRequest) {
       fromName,
       trackOpens: true,
       trackClicks: true,
-    });
+    }, supabase);
 
-    const campaignService = new CampaignService(emailService);
+    const campaignService = new CampaignService(emailService, { supabase });
 
     // Create campaign
     const result = await campaignService.createCampaign({
-      tenantId: auth.tenantId,
+      tenantId,
       name,
       type,
       subject,
@@ -192,16 +155,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      return json({ error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ campaign: result.campaign }, { status: 201 });
+    return json({ campaign: result.campaign }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      const response = NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      return applyCookiesRef ? applyCookiesRef(response) : response;
     }
 
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return applyCookiesRef ? applyCookiesRef(response) : response;
   }
 }

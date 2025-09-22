@@ -4,10 +4,10 @@
 nixPkgs = ["nodejs-20_x", "pnpm-9"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install"]
 
 [phases.build]
-cmds = ["pnpm build"]
+cmds = ["cd apps/web && NODE_OPTIONS='--require ./node-polyfill.cjs' pnpm build"]
 
 [start]
 cmd = "cd apps/web && pnpm start"

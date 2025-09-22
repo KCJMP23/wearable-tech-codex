@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { loadEnv } from './env';
-import type { RedditTrend } from './types';
+import { loadEnv } from './env.js';
+import type { RedditTrend } from './types.js';
 
 interface RedditOptions {
   subreddit: string;

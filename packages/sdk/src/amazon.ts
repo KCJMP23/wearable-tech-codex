@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import axios from 'axios';
-import { loadEnv } from './env';
-import type { AmazonProductResponse, Product } from './types';
+import { loadEnv } from './env.js';
+import type { AmazonProductResponse, Product } from './types.js';
 
 interface AmazonSearchParams {
   asinList: string[];

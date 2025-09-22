@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { loadEnv } from './env';
-import type { SearchSnippet } from './types';
+import { loadEnv } from './env.js';
+import type { SearchSnippet } from './types.js';
 
 interface SearchOptions {
   query: string;

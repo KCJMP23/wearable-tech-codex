@@ -1,16 +1,34 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Matrix } from 'ml-matrix';
-import { SVM } from 'ml-regression';
 import { subDays } from 'date-fns';
-import { 
-  PlacementOptimization,
-  UserBehavior,
-  ProductData 
-} from './types';
+import { PlacementOptimization } from './types';
+import { LogisticRegression } from './utils/logistic-regression.js';
+
+interface CTRTrainingRow {
+  product_id: string;
+  position: number;
+  clicked: boolean;
+  page_type: string;
+  timestamp: string;
+  products?: {
+    price?: number | null;
+    rating?: number | null;
+    reviews?: number | null;
+  } | Array<{
+    price?: number | null;
+    rating?: number | null;
+    reviews?: number | null;
+  }>;
+}
+
+interface ProductStatsRow {
+  price?: number | null;
+  rating?: number | null;
+  reviews?: number | null;
+}
 
 export class PlacementEngine {
   private supabase: SupabaseClient;
-  private clickModel: SVM | null = null;
+  private clickModel: LogisticRegression | null = null;
   private positionBiasFactors: Map<number, number> = new Map();
 
   constructor(supabaseUrl: string, supabaseKey: string) {
@@ -263,7 +281,7 @@ export class PlacementEngine {
   private calculateExpectedCTRLift(
     currentPosition: number,
     newPosition: number,
-    clickData?: { clicks: number; impressions: number; position: number }
+    clickStats?: { clicks: number; impressions: number; position: number }
   ): number {
     const currentBias = this.positionBiasFactors.get(currentPosition) || 0.03;
     const newBias = this.positionBiasFactors.get(newPosition) || 0.03;
@@ -271,6 +289,13 @@ export class PlacementEngine {
     if (currentBias === 0) return 0;
 
     const lift = ((newBias - currentBias) / currentBias) * 100;
+
+    if (clickStats && clickStats.impressions > 0) {
+      const historicalCtr = clickStats.clicks / clickStats.impressions;
+      const stabilityFactor = Math.min(1.5, Math.max(0.5, historicalCtr * 10));
+      return lift * stabilityFactor;
+    }
+
     return lift;
   }
 
@@ -306,26 +331,30 @@ export class PlacementEngine {
     const features: number[][] = [];
     const labels: number[] = [];
 
-    for (const record of data) {
+    for (const row of data as CTRTrainingRow[]) {
+      const product = Array.isArray(row.products) ? row.products[0] : row.products;
+      if (!product) continue;
+
       const feature = [
-        record.position / 10, // Normalized position
-        record.products.rating / 5,
-        Math.log1p(record.products.reviews) / 10,
-        Math.log1p(record.products.price) / 10,
-        this.encodePageType(record.page_type),
-        new Date(record.timestamp).getHours() / 24 // Hour of day
+        row.position / 10,
+        (product.rating ?? 0) / 5,
+        Math.log1p(product.reviews ?? 0) / 10,
+        Math.log1p(product.price ?? 0) / 10,
+        this.encodePageType(row.page_type),
+        new Date(row.timestamp).getHours() / 24
       ];
 
       features.push(feature);
-      labels.push(record.clicked ? 1 : 0);
+      labels.push(row.clicked ? 1 : 0);
     }
 
-    // Create and train SVM model
-    this.clickModel = new SVM(features, labels, {
-      kernel: 'rbf',
-      gamma: 0.5,
-      C: 1
-    });
+    if (!features.length) {
+      console.warn('No usable interactions for CTR model');
+      return;
+    }
+
+    this.clickModel = new LogisticRegression({ learningRate: 0.2, iterations: 250, l2: 0.01 });
+    this.clickModel.train(features, labels);
 
     console.log('Click model training completed');
   }
@@ -358,21 +387,25 @@ export class PlacementEngine {
       .eq('id', productId)
       .single();
 
-    if (!product) return 0;
+    const productRow = product as ProductStatsRow | null;
+
+    if (!productRow) return 0;
+
+    const rating = typeof productRow.rating === 'number' ? productRow.rating : 0;
+    const reviews = typeof productRow.reviews === 'number' ? productRow.reviews : 0;
+    const price = typeof productRow.price === 'number' ? productRow.price : 0;
 
     const features = [
       position / 10,
-      product.rating / 5,
-      Math.log1p(product.reviews) / 10,
-      Math.log1p(product.price) / 10,
+      rating / 5,
+      Math.log1p(reviews) / 10,
+      Math.log1p(price) / 10,
       this.encodePageType(pageType),
       new Date().getHours() / 24
     ];
 
-    // Use SVM for prediction
-    const ctr = this.clickModel ? this.clickModel.predict([features])[0] : 0.02;
-
-    return ctr;
+    const [ctrRaw] = this.clickModel.predict([features]);
+    return Math.min(Math.max(ctrRaw ?? 0, 0), 1);
   }
 
   async personalizeLayout(
@@ -406,6 +439,21 @@ export class PlacementEngine {
         if (userInteraction.action === 'purchase') score += 1.0;
         else if (userInteraction.action === 'click') score += 0.5;
         else if (userInteraction.action === 'view') score += 0.2;
+      }
+
+      // Adjust for page context to diversify layouts per surface
+      switch (pageType) {
+        case 'home':
+          score += 0.05;
+          break;
+        case 'search':
+          score += 0.1;
+          break;
+        case 'article':
+          score += 0.08;
+          break;
+        default:
+          score += 0.04;
       }
 
       // Fetch product details

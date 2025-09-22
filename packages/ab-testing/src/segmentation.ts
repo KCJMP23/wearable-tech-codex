@@ -3,7 +3,9 @@ import {
   Segment,
   SegmentCondition,
   UserContext,
-  SegmentResults
+  SegmentResults,
+  VariantResult,
+  MetricResult
 } from './types.js';
 
 export class SegmentationEngine {
@@ -82,7 +84,7 @@ export class SegmentationEngine {
       return true; // No conditions means everyone is included
     }
 
-    const results = segment.conditions.map(condition => 
+    const results = segment.conditions.map(condition =>
       this.evaluateCondition(condition, context)
     );
 
@@ -178,19 +180,25 @@ export class SegmentationEngine {
     return list.some(item => this.isEqual(value, item));
   }
 
-  private getNestedValue(obj: any, path: string): any {
-    // Support array notation like "attributes[0].value"
-    const keys = path.match(/[^\[\].]+/g) || [];
-    return keys.reduce((current, key) => {
+  private getNestedValue(obj: unknown, path: string): unknown {
+    const keys = path.match(/[^.[\]]+/g) ?? [];
+
+    return keys.reduce<unknown>((current, key) => {
       if (current == null) return undefined;
-      
-      // Handle array index
-      const index = parseInt(key, 10);
-      if (!isNaN(index) && Array.isArray(current)) {
+
+      if (Array.isArray(current)) {
+        const index = Number.parseInt(key, 10);
+        if (Number.isNaN(index)) {
+          return undefined;
+        }
         return current[index];
       }
-      
-      return current[key];
+
+      if (typeof current === 'object') {
+        return (current as Record<string, unknown>)[key];
+      }
+
+      return undefined;
     }, obj);
   }
 
@@ -431,7 +439,7 @@ export class SegmentationEngine {
     }
 
     // Get exposures and conversions for this segment
-    const { data: exposures, error: expError } = await this.supabase
+    const { data: exposuresData, error: expError } = await this.supabase
       .from('ab_exposures')
       .select('*')
       .eq('experiment_id', experimentId)
@@ -439,7 +447,7 @@ export class SegmentationEngine {
 
     if (expError) throw expError;
 
-    const { data: conversions, error: convError } = await this.supabase
+    const { data: conversionsData, error: convError } = await this.supabase
       .from('ab_conversions')
       .select('*')
       .eq('experiment_id', experimentId)
@@ -447,35 +455,67 @@ export class SegmentationEngine {
 
     if (convError) throw convError;
 
-    // Calculate results per variant
-    const variantResults = new Map<string, any>();
+    const { data: experimentRow } = await this.supabase
+      .from('ab_experiments')
+      .select('variants')
+      .eq('id', experimentId)
+      .single();
 
-    exposures?.forEach(exposure => {
-      const variantId = exposure.variant_id;
+    const variantNameMap = new Map<string, string>();
+    const rawVariants = (experimentRow?.variants ?? []) as ExperimentVariantRow[];
+    rawVariants.forEach(variant => {
+      variantNameMap.set(variant.id, variant.name);
+    });
+
+    // Calculate results per variant
+    const variantResults = new Map<string, VariantResult>();
+
+    const segmentExposures = (exposuresData ?? []) as SegmentTrafficRow[];
+    const segmentConversions = (conversionsData ?? []) as SegmentConversionRow[];
+
+    const ensureVariant = (variantId: string): VariantResult => {
       if (!variantResults.has(variantId)) {
         variantResults.set(variantId, {
           variantId,
+          variantName: variantNameMap.get(variantId) ?? variantId,
           exposures: 0,
-          conversions: {}
+          conversions: {},
+          metrics: {}
         });
       }
-      variantResults.get(variantId)!.exposures++;
+      return variantResults.get(variantId)!;
+    };
+
+    segmentExposures.forEach(exposure => {
+      const result = ensureVariant(exposure.variant_id);
+      result.exposures += 1;
     });
 
-    conversions?.forEach(conversion => {
-      const variantId = conversion.variant_id;
+    segmentConversions.forEach(conversion => {
+      const result = ensureVariant(conversion.variant_id);
       const metricId = conversion.metric_id;
-      
-      if (variantResults.has(variantId)) {
-        const result = variantResults.get(variantId)!;
-        result.conversions[metricId] = (result.conversions[metricId] || 0) + 1;
-      }
+      result.conversions[metricId] = (result.conversions[metricId] || 0) + 1;
+    });
+
+    variantResults.forEach(result => {
+      result.metrics = Object.entries(result.conversions).reduce(
+        (acc, [metricId, conversions]) => {
+          const metricResult: MetricResult = {
+            value: conversions,
+            conversions,
+            conversionRate: result.exposures > 0 ? conversions / result.exposures : 0
+          };
+          acc[metricId] = metricResult;
+          return acc;
+        },
+        {} as Record<string, MetricResult>
+      );
     });
 
     return {
       segmentId,
       segmentName: segment.name,
-      exposures: exposures?.length || 0,
+      exposures: segmentExposures.length,
       variants: Array.from(variantResults.values())
     };
   }
@@ -571,4 +611,18 @@ export class SegmentBuilder {
       operator: this.operator
     };
   }
+}
+
+interface SegmentTrafficRow {
+  variant_id: string;
+}
+
+interface SegmentConversionRow {
+  variant_id: string;
+  metric_id: string;
+}
+
+interface ExperimentVariantRow {
+  id: string;
+  name: string;
 }

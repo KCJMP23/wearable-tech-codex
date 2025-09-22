@@ -1,10 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { subDays, startOfDay, endOfDay, format, subHours } from 'date-fns';
-import { RevenueMetrics, AnalyticsEvent } from './types';
+import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+import { subDays, startOfDay, endOfDay, format } from 'date-fns';
+import { RevenueMetrics } from './types';
 
 export class RevenueTracker {
   private supabase: SupabaseClient;
-  private realtimeSubscription: any = null;
+  private realtimeSubscription: RealtimeChannel | null = null;
   private metricsCache: Map<string, RevenueMetrics> = new Map();
   private alertThresholds: {
     revenueDropPercent: number;
@@ -38,7 +38,7 @@ export class RevenueTracker {
           schema: 'public', 
           table: 'analytics' 
         },
-        async (payload) => {
+        async () => {
           // Update metrics on new data
           const metrics = await this.getCurrentMetrics();
           onUpdate(metrics);
@@ -367,7 +367,7 @@ export class RevenueTracker {
     data: [number, number][],
     trend: { slope: number; intercept: number }
   ): number {
-    const yMean = data.reduce((sum, [_, y]) => sum + y, 0) / data.length;
+    const yMean = data.reduce((sum, [, y]) => sum + y, 0) / data.length;
     
     let ssRes = 0, ssTot = 0;
     for (const [x, y] of data) {
@@ -542,7 +542,7 @@ export class RevenueTracker {
   async trackCustomMetric(
     name: string,
     value: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     await this.supabase
       .from('custom_metrics')
@@ -558,7 +558,7 @@ export class RevenueTracker {
     name: string,
     start: Date,
     end: Date
-  ): Promise<Array<{ timestamp: Date; value: number; metadata?: any }>> {
+  ): Promise<Array<{ timestamp: Date; value: number; metadata?: Record<string, unknown> | null }>> {
     const { data } = await this.supabase
       .from('custom_metrics')
       .select('timestamp, value, metadata')
@@ -570,7 +570,7 @@ export class RevenueTracker {
     return (data || []).map(d => ({
       timestamp: new Date(d.timestamp),
       value: d.value,
-      metadata: d.metadata
+      metadata: d.metadata ?? null
     }));
   }
 }

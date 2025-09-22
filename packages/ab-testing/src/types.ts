@@ -157,6 +157,8 @@ export interface ExperimentResults {
   sampleSizeRecommendation?: number;
   performance: PerformanceMetrics;
   segments?: SegmentResults[];
+  funnel?: FunnelAnalysis;
+  timeSeries?: TimeSeriesData[];
 }
 
 export interface SegmentResults {
@@ -331,6 +333,27 @@ export class ABTestingError extends Error {
     super(message);
     this.name = 'ABTestingError';
   }
+}
+
+export interface TimeSeriesVariantMetrics {
+  exposures: number;
+  conversions: number;
+  conversionRate: number;
+}
+
+export interface TimeSeriesData {
+  date: Date;
+  variants: Record<string, TimeSeriesVariantMetrics>;
+}
+
+export interface FunnelVariantMetrics {
+  counts: Record<string, number>;
+  conversionRates?: Record<string, number>;
+}
+
+export interface FunnelAnalysis {
+  steps: string[];
+  variants: Record<string, FunnelVariantMetrics>;
 }
 
 export class AllocationError extends ABTestingError {

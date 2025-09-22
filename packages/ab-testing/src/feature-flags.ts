@@ -1,18 +1,22 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import * as murmur from 'murmurhash';
 import {
   FeatureFlag,
   UserContext,
-  SegmentCondition,
-  Experiment,
-  ExperimentStatus
+  SegmentCondition
 } from './types.js';
+
+type FlagChangePayload = {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: unknown;
+  old: unknown;
+};
 
 export class FeatureFlagManager {
   private flags: Map<string, FeatureFlag> = new Map();
   private evaluationCache: Map<string, boolean | unknown> = new Map();
   private refreshInterval?: NodeJS.Timeout;
-  private realtimeSubscription?: any;
+  private realtimeSubscription?: RealtimeChannel;
 
   constructor(
     private supabase: SupabaseClient,
@@ -69,27 +73,29 @@ export class FeatureFlagManager {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'feature_flags' },
         (payload) => {
-          this.handleFlagChange(payload);
+          this.handleFlagChange(payload as FlagChangePayload);
         }
       )
       .subscribe();
   }
 
-  private handleFlagChange(payload: any) {
+  private handleFlagChange(payload: FlagChangePayload) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
+    const nextRecord = this.normalizeFlagRecord(newRecord);
+    const previousRecord = this.normalizeFlagRecord(oldRecord);
 
     switch (eventType) {
       case 'INSERT':
       case 'UPDATE':
-        if (newRecord?.enabled) {
-          this.flags.set(newRecord.id, newRecord);
-        } else if (newRecord && !newRecord.enabled) {
-          this.flags.delete(newRecord.id);
+        if (nextRecord?.enabled && nextRecord.id) {
+          this.flags.set(nextRecord.id, nextRecord as FeatureFlag);
+        } else if (nextRecord && nextRecord.id) {
+          this.flags.delete(nextRecord.id);
         }
         break;
       case 'DELETE':
-        if (oldRecord?.id) {
-          this.flags.delete(oldRecord.id);
+        if (previousRecord?.id) {
+          this.flags.delete(previousRecord.id);
         }
         break;
     }
@@ -218,16 +224,25 @@ export class FeatureFlagManager {
       case 'lte':
         return Number(value) <= Number(condition.value);
       case 'in':
-        return Array.isArray(condition.value) && condition.value.includes(value);
+        return Array.isArray(condition.value)
+          ? (condition.value as unknown[]).includes(value)
+          : false;
       case 'not_in':
-        return Array.isArray(condition.value) && !condition.value.includes(value);
+        return Array.isArray(condition.value)
+          ? !(condition.value as unknown[]).includes(value)
+          : false;
       default:
         return false;
     }
   }
 
-  private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  private getNestedValue(obj: UserContext, path: string): unknown {
+    return path.split('.').reduce<unknown>((current, key) => {
+      if (current && typeof current === 'object') {
+        return (current as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj as unknown);
   }
 
   private isInRollout(
@@ -504,9 +519,16 @@ export class FeatureFlagManager {
       clearInterval(this.refreshInterval);
     }
     if (this.realtimeSubscription) {
-      this.realtimeSubscription.unsubscribe();
+      void this.realtimeSubscription.unsubscribe();
     }
     this.clearCache();
+  }
+
+  private normalizeFlagRecord(record: unknown): Partial<FeatureFlag> | null {
+    if (!record || typeof record !== 'object') {
+      return null;
+    }
+    return record as Partial<FeatureFlag>;
   }
 }
 

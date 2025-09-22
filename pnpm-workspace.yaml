@@ -1,6 +1,9 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  - '!packages/blockchain'
+  # Include experimental packages referenced by apps/web for lint/typecheck
+  - '!packages/plugins'
   - 'infra/*'
   - 'scripts'
   - 'bin'

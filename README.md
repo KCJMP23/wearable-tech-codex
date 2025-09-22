@@ -45,6 +45,10 @@ AffiliateOS is a powerful multi-tenant platform that enables anyone to create an
 - Supabase account
 - OpenAI API key
 
+## 🛡️ Production Readiness
+- Track remediation and launch hardening work in the [Production Readiness Plan](./PRODUCTION_READINESS_PLAN.md).
+- Each phase lists acceptance criteria and owners so teams can execute in parallel and ship safely.
+
 ### Installation
 
 ```bash

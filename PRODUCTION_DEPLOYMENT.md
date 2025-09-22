@@ -51,7 +51,7 @@ cp .env.example .env.production
 # Supabase (from project settings > API)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # OpenAI
 OPENAI_API_KEY=sk-...
@@ -80,7 +80,7 @@ vercel link
 # Add each variable from .env.production
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
-vercel env add SUPABASE_SERVICE_KEY production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
 # ... continue for all variables
 ```
 

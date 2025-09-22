@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { loadEnv } from './env';
-import type { Database } from './database.types';
+import { loadEnv } from './env.js';
+import type { Database } from './database.types.js';
 
 export type SupabaseRole = 'anon' | 'service';
 export type TypedSupabaseClient = SupabaseClient<Database>;

@@ -1,16 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Segment, SegmentCondition } from '../types';
 import { SegmentationQueryBuilder } from './query-builder';
 
 export class SegmentService {
-  private supabase;
+  private supabase: SupabaseClient<any, 'public', any>;
   private queryBuilder: SegmentationQueryBuilder;
 
-  constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+  constructor(supabaseClient?: SupabaseClient<any, 'public', any>) {
+    this.supabase =
+      supabaseClient ??
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
     this.queryBuilder = new SegmentationQueryBuilder();
   }
 

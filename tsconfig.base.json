@@ -12,12 +12,12 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@affiliate-factory/ui": ["packages/ui/src"],
-      "@affiliate-factory/content": ["packages/content"],
-      "@affiliate-factory/sdk": ["packages/sdk/src"],
-      "@affiliate-factory/sdk/*": ["packages/sdk/src/*"],
-      "@affiliate-factory/types": ["packages/sdk/src/types"],
-      "@affiliate-factory/components/*": ["packages/ui/src/components/*"]
+      "@affiliate-factory/ui": ["./packages/ui/src"],
+      "@affiliate-factory/content": ["./packages/content"],
+      "@affiliate-factory/sdk": ["./packages/sdk/src"],
+      "@affiliate-factory/sdk/*": ["./packages/sdk/src/*"],
+      "@affiliate-factory/types": ["./packages/sdk/src/types"],
+      "@affiliate-factory/components/*": ["./packages/ui/src/components/*"]
     },
     "types": ["node"]
   },

@@ -183,14 +183,13 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/escrow/[id] - Get specific escrow details
  */
-export async function getEscrowDetails(request: NextRequest, { params }: { params: { id: string } }) {
+export async function getEscrowDetails(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
-
-    const escrowId = params.id;
+    const { id: escrowId } = await context.params;
 
     // Get escrow with access validation
     const { data: escrow, error } = await supabase
@@ -243,14 +242,13 @@ export async function getEscrowDetails(request: NextRequest, { params }: { param
 /**
  * PATCH /api/escrow/[id] - Update escrow status or details
  */
-export async function updateEscrow(request: NextRequest, { params }: { params: { id: string } }) {
+export async function updateEscrow(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
-
-    const escrowId = params.id;
+    const { id: escrowId } = await context.params;
     const body = await request.json();
 
     // Validate access
@@ -303,12 +301,14 @@ export async function updateEscrow(request: NextRequest, { params }: { params: {
 /**
  * POST /api/escrow/[id]/milestones - Update milestone progress
  */
-export async function updateMilestone(request: NextRequest, { params }: { params: { id: string } }) {
+export async function updateMilestone(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
+
+    await context.params;
 
     const body = await request.json();
     const updateData = MilestoneUpdateSchema.parse(body);
@@ -356,12 +356,14 @@ export async function updateMilestone(request: NextRequest, { params }: { params
 /**
  * POST /api/escrow/[id]/approve - Approve milestone or escrow action
  */
-export async function approveMilestone(request: NextRequest, { params }: { params: { id: string } }) {
+export async function approveMilestone(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
+
+    await context.params;
 
     const body = await request.json();
     const { milestoneId, notes, autoRelease = true } = body;
@@ -403,12 +405,14 @@ export async function approveMilestone(request: NextRequest, { params }: { param
 /**
  * POST /api/escrow/[id]/release - Release milestone funds
  */
-export async function releaseFunds(request: NextRequest, { params }: { params: { id: string } }) {
+export async function releaseFunds(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
+
+    await context.params;
 
     const body = await request.json();
     const { milestoneId, force = false } = body;
@@ -438,12 +442,14 @@ export async function releaseFunds(request: NextRequest, { params }: { params: {
 /**
  * POST /api/escrow/[id]/disputes - Create dispute
  */
-export async function createDispute(request: NextRequest, { params }: { params: { id: string } }) {
+export async function createDispute(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
+
+    await context.params;
 
     const body = await request.json();
     const disputeData = DisputeCreateSchema.parse(body);
@@ -460,12 +466,14 @@ export async function createDispute(request: NextRequest, { params }: { params: 
 /**
  * POST /api/escrow/[id]/documents - Upload document
  */
-export async function uploadDocument(request: NextRequest, { params }: { params: { id: string } }) {
+export async function uploadDocument(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = request.headers.get('x-user-id');
     if (!userId) {
       throw new AuthorizationError('Authentication required');
     }
+
+    await context.params;
 
     const formData = await request.formData();
     const file = formData.get('file') as File;

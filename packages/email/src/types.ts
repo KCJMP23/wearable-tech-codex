@@ -14,6 +14,8 @@ export const EmailConfigSchema = z.object({
   trackOpens: z.boolean().default(true),
   trackClicks: z.boolean().default(true),
   unsubscribeUrl: z.string().url().optional(),
+  accessKeyId: z.string().optional(),
+  secretAccessKey: z.string().optional(),
 });
 
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
@@ -196,7 +198,8 @@ export type Subscriber = z.infer<typeof SubscriberSchema>;
 
 // Analytics Types
 export const EmailAnalyticsSchema = z.object({
-  campaignId: z.string().uuid(),
+  campaignId: z.string().uuid().optional(),
+  automationId: z.string().uuid().optional(),
   subscriberId: z.string().uuid(),
   event: z.enum(['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained', 'unsubscribed']),
   timestamp: z.date(),
@@ -208,6 +211,8 @@ export const EmailAnalyticsSchema = z.object({
     region: z.string().optional(),
     city: z.string().optional(),
   }).optional(),
+  url: z.string().url().optional(),
+  messageId: z.string().optional(),
 });
 
 export type EmailAnalytics = z.infer<typeof EmailAnalyticsSchema>;

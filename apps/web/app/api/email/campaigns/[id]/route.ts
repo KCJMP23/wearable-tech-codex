@@ -1,129 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { CampaignService } from '@affiliate-factory/email';
 import { EmailService } from '@affiliate-factory/email';
-import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rate-limit';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { requireTenantContext } from '@/lib/api/tenant-context';
 
 const limiter = rateLimit({
   interval: 60 * 1000,
   uniqueTokenPerInterval: 500,
 });
 
-async function getTenantId(request: NextRequest): Promise<string | null> {
-  const headersList = headers();
-  const tenantSlug = headersList.get('x-tenant-slug');
-  
-  if (!tenantSlug) return null;
-
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', tenantSlug)
-    .single();
-
-  return tenant?.id || null;
-}
-
-async function checkAuth(request: NextRequest): Promise<{ userId: string; tenantId: string } | null> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.substring(7);
-  const { data: { user } } = await supabase.auth.getUser(token);
-  
-  if (!user) return null;
-
-  const tenantId = await getTenantId(request);
-  if (!tenantId) return null;
-
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenantId)
-    .single();
-
-  if (!membership) return null;
-
-  return { userId: user.id, tenantId };
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+  let applyCookiesRef: ((response: NextResponse) => NextResponse) | null = null;
   try {
     await limiter.check(request);
 
-    const auth = await checkAuth(request);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { context, error: contextError } = await requireTenantContext(request);
+    if (!context) {
+      return contextError!;
     }
 
-    const { data: campaign, error } = await supabase
+    const { supabase, tenantId, applyCookies } = context;
+    applyCookiesRef = applyCookies;
+
+    const { data: campaign, error: queryError } = await supabase
       .from('email_campaigns')
       .select(`
         *,
         stats:email_campaign_stats(*),
         analytics:email_analytics(*)
       `)
-      .eq('id', params.id)
-      .eq('tenant_id', auth.tenantId)
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
       .single();
 
-    if (error || !campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    if (queryError || !campaign) {
+      const response = NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return applyCookies(response);
     }
 
-    return NextResponse.json({ campaign });
+    return applyCookies(NextResponse.json({ campaign }));
   } catch (error) {
     if (error instanceof Error && error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      const response = NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      return applyCookiesRef ? applyCookiesRef(response) : response;
     }
 
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return applyCookiesRef ? applyCookiesRef(response) : response;
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+  let applyCookiesRef: ((response: NextResponse) => NextResponse) | null = null;
   try {
     await limiter.check(request);
 
-    const auth = await checkAuth(request);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { context, error: contextError } = await requireTenantContext(request);
+    if (!context) {
+      return contextError!;
     }
+
+    const { supabase, tenantId, applyCookies } = context;
+    applyCookiesRef = applyCookies;
 
     // Check if campaign exists and belongs to tenant
     const { data: existingCampaign } = await supabase
       .from('email_campaigns')
       .select('id, status')
-      .eq('id', params.id)
-      .eq('tenant_id', auth.tenantId)
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (!existingCampaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      const response = NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return applyCookies(response);
     }
 
     // Only allow editing draft campaigns
     if (existingCampaign.status !== 'draft') {
-      return NextResponse.json(
-        { error: 'Can only edit draft campaigns' },
-        { status: 400 }
-      );
+      const response = NextResponse.json({ error: 'Can only edit draft campaigns' }, { status: 400 });
+      return applyCookies(response);
     }
 
     const body = await request.json();
@@ -135,83 +100,93 @@ export async function PUT(
       fromName: body.fromName,
       trackOpens: true,
       trackClicks: true,
-    });
+    }, supabase);
 
-    const campaignService = new CampaignService(emailService);
+    const campaignService = new CampaignService(emailService, { supabase });
 
-    const result = await campaignService.updateCampaign(params.id, body);
+    const result = await campaignService.updateCampaign(id, body);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      const response = NextResponse.json({ error: result.error }, { status: 400 });
+      return applyCookies(response);
     }
 
     // Get updated campaign
     const { data: updatedCampaign } = await supabase
       .from('email_campaigns')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
-    return NextResponse.json({ campaign: updatedCampaign });
+    return applyCookies(NextResponse.json({ campaign: updatedCampaign }));
   } catch (error) {
     if (error instanceof Error && error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      const response = NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      return applyCookiesRef ? applyCookiesRef(response) : response;
     }
 
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return applyCookiesRef ? applyCookiesRef(response) : response;
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+  let applyCookiesRef: ((response: NextResponse) => NextResponse) | null = null;
   try {
     await limiter.check(request);
 
-    const auth = await checkAuth(request);
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { context, error: contextError } = await requireTenantContext(request);
+    if (!context) {
+      return contextError!;
     }
+
+    const { supabase, tenantId, applyCookies } = context;
+    applyCookiesRef = applyCookies;
 
     // Check if campaign exists and belongs to tenant
     const { data: campaign } = await supabase
       .from('email_campaigns')
       .select('id, status')
-      .eq('id', params.id)
-      .eq('tenant_id', auth.tenantId)
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
       .single();
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      const response = NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return applyCookies(response);
     }
 
     // Only allow deleting draft campaigns
     if (campaign.status !== 'draft') {
-      return NextResponse.json(
-        { error: 'Can only delete draft campaigns' },
-        { status: 400 }
-      );
+      const response = NextResponse.json({ error: 'Can only delete draft campaigns' }, { status: 400 });
+      return applyCookies(response);
     }
 
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('email_campaigns')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
-    if (error) {
-      console.error('Delete error:', error);
-      return NextResponse.json({ error: 'Failed to delete campaign' }, { status: 500 });
+    if (deleteError) {
+      console.error('Delete error:', deleteError);
+      const response = NextResponse.json({ error: 'Failed to delete campaign' }, { status: 500 });
+      return applyCookies(response);
     }
 
-    return NextResponse.json({ success: true });
+    return applyCookies(NextResponse.json({ success: true }));
   } catch (error) {
     if (error instanceof Error && error.message === 'Rate limit exceeded') {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      const response = NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      return applyCookiesRef ? applyCookiesRef(response) : response;
     }
 
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return applyCookiesRef ? applyCookiesRef(response) : response;
   }
 }

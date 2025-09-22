@@ -14,6 +14,17 @@ import { ContentScorer } from './content-scorer';
 import { BehaviorAnalyzer } from './behavior-analyzer';
 import { ExperimentRunner } from './experiment-runner';
 import { RevenueTracker } from './revenue-tracker';
+import type {
+  ConversionPrediction,
+  PricingRecommendation,
+  PlacementOptimization,
+  RevenueMetrics,
+  ExperimentResult,
+  ContentPerformance,
+  ExperimentConfig,
+  UserSegment,
+} from './types';
+import type { UserAnalysis } from './behavior-analyzer';
 import { OptimizerConfig, OptimizationStrategy } from './types';
 
 /**
@@ -96,9 +107,9 @@ export class AIOptimizer {
     productIds: string[],
     strategy: OptimizationStrategy = 'maximize_revenue'
   ): Promise<{
-    conversions: any[];
-    pricing: any[];
-    placements: any[];
+    conversions: ConversionPrediction[];
+    pricing: PricingRecommendation[];
+    placements: PlacementOptimization[];
     experiments: string[];
   }> {
     console.log(`Running optimization for ${productIds.length} products with strategy: ${strategy}`);
@@ -128,7 +139,7 @@ export class AIOptimizer {
    * Analyze user behavior and generate personalized recommendations
    */
   async analyzeUser(userId: string): Promise<{
-    behavior: any;
+    behavior: UserAnalysis;
     recommendations: string[];
     experiments: string[];
   }> {
@@ -158,7 +169,7 @@ export class AIOptimizer {
     contentType: 'article' | 'review' | 'comparison' | 'guide',
     targetMetric: 'engagement' | 'conversion' | 'readability' = 'conversion'
   ): Promise<{
-    score: any;
+    score: ContentPerformance;
     optimized: string | undefined;
     suggestions: string[];
   }> {
@@ -176,7 +187,7 @@ export class AIOptimizer {
    * Start real-time revenue monitoring with alerts
    */
   async startMonitoring(
-    onUpdate: (metrics: any) => void,
+    onUpdate: (metrics: RevenueMetrics) => void,
     onAlert: (alert: string) => void
   ): Promise<void> {
     await this.revenueTracker.startRealtimeTracking(onUpdate, onAlert);
@@ -186,22 +197,28 @@ export class AIOptimizer {
    * Get comprehensive dashboard metrics
    */
   async getDashboardMetrics(): Promise<{
-    realtime: any;
-    forecast: any;
-    experiments: any[];
-    segments: any[];
+    realtime: RevenueMetrics;
+    forecast: Awaited<ReturnType<RevenueTracker['getRevenueForecacast']>>;
+    experiments: ExperimentConfig[];
+    segments: UserSegment[];
     alerts: string[];
   }> {
-    const [realtime, forecast, experiments, segments, insights] = await Promise.all([
+    const [
+      realtime,
+      forecast,
+      experiments,
+      segments,
+      insights,
+    ] = await Promise.all([
       this.revenueTracker.getCurrentMetrics(),
       this.revenueTracker.getRevenueForecacast(7),
       this.experimentRunner.getActiveExperiments(),
       this.behaviorAnalyzer.segmentUsers(),
       this.behaviorAnalyzer.getRealTimeInsights()
     ]);
-    
+
     const alerts = await this.revenueTracker.checkAlerts(realtime);
-    
+
     return {
       realtime,
       forecast,
@@ -241,7 +258,7 @@ export class AIOptimizer {
   /**
    * Analyze experiment results
    */
-  async analyzeExperiment(experimentId: string): Promise<any> {
+  async analyzeExperiment(experimentId: string): Promise<ExperimentResult> {
     return await this.experimentRunner.analyzeExperiment(experimentId);
   }
 
@@ -314,7 +331,7 @@ export class AIOptimizer {
 
   private async generatePersonalizedRecommendations(
     userId: string,
-    behavior: any
+    behavior: UserAnalysis
   ): Promise<string[]> {
     // This would use collaborative filtering or content-based filtering
     // For now, return top products from preferred categories
@@ -337,35 +354,39 @@ export class AIOptimizer {
   }
 
   private async generateExperimentVariants(
-    type: string,
+    type: ExperimentConfig['type'],
     productIds: string[]
-  ): Promise<any[]> {
-    switch (type) {
-      case 'pricing':
-        return [
-          { id: 'control', name: 'Current Price', allocation: 0.5, config: {} },
-          { id: 'test_5', name: '5% Increase', allocation: 0.25, config: { priceMultiplier: 1.05 } },
-          { id: 'test_10', name: '10% Decrease', allocation: 0.25, config: { priceMultiplier: 0.9 } }
-        ];
-      
-      case 'placement':
-        return [
-          { id: 'control', name: 'Current Order', allocation: 0.5, config: {} },
-          { id: 'optimized', name: 'ML Optimized', allocation: 0.5, config: { algorithm: 'ml_optimized' } }
-        ];
-      
-      case 'content':
-        return [
-          { id: 'control', name: 'Original', allocation: 0.5, config: {} },
-          { id: 'optimized', name: 'AI Optimized', allocation: 0.5, config: { optimized: true } }
-        ];
-      
-      default:
-        return [
-          { id: 'control', name: 'Control', allocation: 0.5, config: {} },
-          { id: 'variant', name: 'Test Variant', allocation: 0.5, config: {} }
-        ];
-    }
+  ): Promise<ExperimentConfig['variants']> {
+    const variants: ExperimentConfig['variants'] = (() => {
+      switch (type) {
+        case 'pricing':
+          return [
+            { id: 'control', name: 'Current Price', allocation: 0.5, config: { targetProducts: productIds } },
+            { id: 'test_5', name: '5% Increase', allocation: 0.25, config: { priceMultiplier: 1.05, targetProducts: productIds } },
+            { id: 'test_10', name: '10% Decrease', allocation: 0.25, config: { priceMultiplier: 0.9, targetProducts: productIds } }
+          ];
+
+        case 'placement':
+          return [
+            { id: 'control', name: 'Current Order', allocation: 0.5, config: { targetProducts: productIds } },
+            { id: 'optimized', name: 'ML Optimized', allocation: 0.5, config: { algorithm: 'ml_optimized', targetProducts: productIds } }
+          ];
+
+        case 'content':
+          return [
+            { id: 'control', name: 'Original', allocation: 0.5, config: { targetProducts: productIds } },
+            { id: 'optimized', name: 'AI Optimized', allocation: 0.5, config: { optimized: true, targetProducts: productIds } }
+          ];
+
+        default:
+          return [
+            { id: 'control', name: 'Control', allocation: 0.5, config: { targetProducts: productIds } },
+            { id: 'variant', name: 'Test Variant', allocation: 0.5, config: { targetProducts: productIds } }
+          ];
+      }
+    })();
+
+    return variants;
   }
 
   /**
